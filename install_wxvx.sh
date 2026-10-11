@@ -175,7 +175,7 @@ echo "Package cache:     $CONDA_PKGS_DIRS"
 echo "Conda config:      $CONDARC"
 
 # ============================================================
-# Create activation and deactivation scripts
+# Create activation script
 # ============================================================
 
 cat > "$INSTALL_ROOT/activate_wxvx.sh" <<EOF

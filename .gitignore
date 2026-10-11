@@ -1,0 +1,4 @@
+*.swp
+conda/
+condarc
+activate_wxvx.sh
