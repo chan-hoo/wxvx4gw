@@ -12,7 +12,7 @@ The installation script downloads and installs Miniforge locally, creates a dedi
 - Dedicated Conda environment for `wxvx`.
 - Project-local Conda package cache and configuration.
 - No requirement to run `conda init`.
-- Shell scripts for activating and deactivating the environment.
+- Shell scripts for activating the environment.
 - Support for Linux x86_64 and aarch64 architectures, subject to package availability and system compatibility.
 
 ## 2. Installation Directory Structure
@@ -110,39 +110,5 @@ If the environment is active and Conda is initialized in your current shell:
 
 ```bash
 conda deactivate
-```
-
-## 5. Verify the Installation
-
-With the environment activated, run:
-
-```bash
-conda --version
-python --version
-wxvx --help
-```
-
-You can inspect the installed packages with:
-
-```bash
-conda list
-```
-
-To check the location of the package cache:
-
-```bash
-conda info
-```
-
-The package cache should be under:
-
-```text
-sorc/conda/pkgs/
-```
-
-The environment should be under:
-
-```text
-sorc/conda/envs/wxvx/
 ```
 
