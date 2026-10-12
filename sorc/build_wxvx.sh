@@ -3,25 +3,6 @@
 set -euo pipefail
 
 # ==============================================================
-# Check command-line argument
-# ==============================================================
-
-if [[ $# -ne 1 ]]; then
-    echo "Usage: $0 {gaea-c6|gaea-c7|hercules|ursa}"
-    exit 1
-fi
-
-PLATFORM="$1"
-case "$PLATFORM" in
-    gaea-c6|gaea-c7)
-	module reset
-	;;
-    *)
-        module purge
-        ;;
-esac
-
-# ==============================================================
 # Define installation directories
 # ==============================================================
 
@@ -114,6 +95,8 @@ envs_dirs:
 
 pkgs_dirs:
   - $CONDA_PKGS_DIRS
+
+register_envs: false
 EOF
 
 # ==============================================================
@@ -162,7 +145,6 @@ conda run --prefix "$WXVX_ENV" wxvx --version
 
 echo
 echo "Installation completed successfully."
-echo "Platform:          $PLATFORM"
 echo "Miniforge:         $INSTALLDIR"
 echo "Environment:       $WXVX_ENV"
 echo "Package cache:     $CONDA_PKGS_DIRS"
