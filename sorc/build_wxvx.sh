@@ -12,18 +12,12 @@ if [[ $# -ne 1 ]]; then
 fi
 
 PLATFORM="$1"
-
 case "$PLATFORM" in
     gaea-c6|gaea-c7)
 	module reset
 	;;
-    hercules|ursa)
-	module purge
-        ;;
     *)
-        echo "Error: Unsupported platform '$PLATFORM'."
-        echo "Supported platforms: gaea-c6, gaea-c7, hercules, ursa"
-        exit 1
+        module purge
         ;;
 esac
 
