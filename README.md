@@ -52,20 +52,20 @@ All paths are relative to the directory where the installation script is execute
 
 ### Step 1. Clone the repository
 
+- SSH
+```bash
+git clone git@github.com:chan-hoo/wxvx4gw.git
+```
+
+- HTTPS
 ```bash
 git clone https://github.com/chan-hoo/wxvx4gw.git
+```
+
+### Step 2. Run the installation script
+
+```bash
 cd wxvx4gw/sorc
-```
-
-### Step 2. Make the installation script executable
-
-```bash
-chmod +x build_wxvx.sh
-```
-
-### Step 3. Run the installation script
-
-```bash
 ./build_wxvx.sh
 ```
 
