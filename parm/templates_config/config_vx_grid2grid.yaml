@@ -1,0 +1,77 @@
+cycles:
+  start: 2022-02-03T12:00:00
+  step: 0
+  stop: 2022-02-03T12:00:00
+forecast:
+  coords:
+    latitude: latitude
+    level: level
+    longitude: longitude
+    time:
+      inittime: forecast_reference_time
+      validtime: time
+  projection:
+    proj: latlon
+  name: nested_global
+  path: '{{ meta.post_files }}/nested-global.{{ yyyymmdd[:4] }}-{{ yyyymmdd[4:6] }}-{{ yyyymmdd[6:8] }}T{{ hh }}.{{ "%02d" % meta.max_leadtime }}h.nc'
+leadtimes:
+  start: '6:00:00'
+  step: '6:00:00'
+  stop: '24'
+meta:
+  workdir: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/vx/grid2grid/global
+  grids: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/vx/grid2grid/global/grids
+  max_leadtime: 24
+  post_files: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/vx/postprocessed_files/global
+variables:
+  t2m:
+    level_type: heightAboveGround
+    levels:
+    - 2
+    name: 2t
+  gh:
+    level_type: isobaricInhPa
+    levels:
+    - 500
+    name: gh
+  sp:
+    level_type: surface
+    name: sp
+  t:
+    level_type: isobaricInhPa
+    levels:
+    - 850
+    name: t
+  u:
+    level_type: isobaricInhPa
+    levels:
+    - 250
+    name: u
+  u10:
+    level_type: heightAboveGround
+    levels:
+    - 10
+    name: 10u
+  v:
+    level_type: isobaricInhPa
+    levels:
+    - 250
+    name: v
+  v10:
+    level_type: heightAboveGround
+    levels:
+    - 10
+    name: 10v
+truth:
+  name: GFS
+  type: grid
+  url: https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.{{ yyyymmdd }}/{{ hh }}/atmos/gfs.t{{ hh }}z.pgrb2.0p25.f{{ "%03d" % fh }}
+ncdiffs: true
+regrid:
+  method: NEAREST
+  to: forecast
+paths:
+  grids:
+    forecast: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/vx/grid2grid/global/grids/forecast
+    truth: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/vx/grid2grid/global/grids/truth
+  run: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/vx/grid2grid/global/run

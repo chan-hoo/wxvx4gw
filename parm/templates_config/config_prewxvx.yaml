@@ -1,0 +1,39 @@
+forecast_path: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/inference/output
+freq: 6h
+lead_time: 24
+lam_index: 64220
+lcc_info:
+  n_x: 338
+  n_y: 190
+levels:
+- 250
+- 500
+- 850
+start_date: '2022-02-03 12:00:00'
+end_date: '2022-02-03 12:00:00'
+vars_of_interest:
+- t2m
+- gh
+- sp
+- t
+- u
+- u10
+- v
+- v10
+output_path: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/vx/postprocessed_files/global
+model_type: nested-global
+anemoi_reference_dataset_kwargs:
+  adjust: all
+  cutout:
+  - dataset: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/data/hrrr.zarr
+    trim_edge:
+    - 10
+    - 11
+    - 10
+    - 11
+  - dataset: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/data/gfs.zarr
+  min_distance_km: 0
+forecast_regrid_kwargs:
+  regridder_kwargs:
+    method: conservative_normed
+  target_grid_path: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/data/global_one_degree.nc

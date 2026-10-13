@@ -1,4 +1,5 @@
 *.swp
+parm/config.yaml
 sorc/conda/
 sorc/condarc
 sorc/activate_wxvx.sh
