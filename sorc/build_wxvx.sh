@@ -115,23 +115,27 @@ echo "Effective Conda configuration:"
 conda info
 
 # ==============================================================
-# Create the wxvx environment
+# Create the wxvx environment from YAML
 # ==============================================================
 
+ENV_FILE="$INSTALL_ROOT/wxvx.yaml"
 WXVX_ENV="$CONDA_ENVS_PATH/wxvx"
+
+if [[ ! -f "$ENV_FILE" ]]; then
+    echo "Error: Environment YAML not found: $ENV_FILE" >&2
+    exit 1
+fi
 
 if [[ -x "$WXVX_ENV/bin/wxvx" ]]; then
     echo "Found existing wxvx environment: $WXVX_ENV"
+    echo "Skipping environment creation."
 else
-    echo "Creating wxvx environment..."
+    echo "Creating wxvx environment from:"
+    echo "  $ENV_FILE"
 
-    conda create -y \
+    conda env create \
         --prefix "$WXVX_ENV" \
-        --override-channels \
-        -c oar-gsl \
-        -c ufs-community \
-        -c conda-forge \
-        wxvx
+        --file "$ENV_FILE"
 fi
 
 # ==============================================================
@@ -139,16 +143,24 @@ fi
 # ==============================================================
 
 echo
-echo "Verifying wxvx installation..."
+echo "Verifying installed packages..."
 
+conda run --prefix "$WXVX_ENV" python --version
+conda run --prefix "$WXVX_ENV" python -m pip --version
 conda run --prefix "$WXVX_ENV" wxvx --version
+conda run --prefix "$WXVX_ENV" uw --version
+
+echo
+echo "Installed packages:"
+conda list --prefix "$WXVX_ENV"
 
 echo
 echo "Installation completed successfully."
-echo "Miniforge:         $INSTALLDIR"
-echo "Environment:       $WXVX_ENV"
-echo "Package cache:     $CONDA_PKGS_DIRS"
-echo "Conda config:      $CONDARC"
+echo "Miniforge: $INSTALLDIR"
+echo "Environment: $WXVX_ENV"
+echo "Environment YAML: $ENV_FILE"
+echo "Package cache: $CONDA_PKGS_DIRS"
+echo "Conda config: $CONDARC"
 
 # ============================================================
 # Create activation script
@@ -175,7 +187,8 @@ fi
 
 source "\$_CONDA_ROOT/etc/profile.d/conda.sh"
 conda activate "\$_WXVX_ENV"
-conda list | grep -E 'wxvx|met2go|uwtools'
+
+conda list | grep -E 'wxvx|met2go|uwtools|eagle-tools'
 which wxvx
 wxvx --help
 EOF

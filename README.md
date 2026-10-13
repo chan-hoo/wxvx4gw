@@ -12,7 +12,7 @@ The installation script downloads and installs Miniforge locally, creates a dedi
 - Dedicated Conda environment for `wxvx`.
 - Project-local Conda package cache and configuration.
 - No requirement to run `conda init`.
-- Shell scripts for activating the environment.
+- Shell script for activating the environment.
 - Support for Linux x86_64 and aarch64 architectures, subject to package availability and system compatibility.
 
 ## 2. Installation Directory Structure
@@ -75,7 +75,7 @@ The script performs the following operations:
 2. Downloads the specified Miniforge installer if a local installation does not already exist.
 3. Installs Miniforge under `sorc/conda/`.
 4. Configures the Conda environment directory and package cache.
-5. Creates a dedicated `wxvx` environment using the `oar-gsl`, `ufs-community`, and `conda-forge` channels.
+5. Creates `wxvx` environment from YAML.
 6. Verifies the installation.
 
 The installation requires network access to the Miniforge release and Conda package repositories.
@@ -87,7 +87,7 @@ The installation requires network access to the Miniforge release and Conda pack
 After installation, activate the environment by sourcing the activation script:
 
 ```bash
-source ./activate_wxvx.sh
+source activate_wxvx.sh
 ```
 
 Verify the active environment:
