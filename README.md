@@ -23,6 +23,7 @@ The resulting directory structure is:
 
 ```text
 wxvx4gw/
+├── parm/
 └── sorc/
     ├── build_wxvx.sh
     ├── wxvx.yaml
