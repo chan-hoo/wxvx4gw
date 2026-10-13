@@ -25,6 +25,7 @@ The resulting directory structure is:
 wxvx4gw/
 └── sorc/
     ├── build_wxvx.sh
+    ├── wxvx.yaml
     ├── activate_wxvx.sh
     ├── condarc
     └── conda/
