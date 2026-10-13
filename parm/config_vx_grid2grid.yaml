@@ -10,9 +10,9 @@ forecast:
     time:
       inittime: forecast_reference_time
       validtime: time
+  name: nested_global
   projection:
     proj: latlon
-  name: nested_global
   path: '{{ meta.post_files }}/nested-global.{{ yyyymmdd[:4] }}-{{ yyyymmdd[4:6] }}-{{ yyyymmdd[6:8] }}T{{ hh }}.{{ "%02d" % meta.max_leadtime }}h.nc'
 leadtimes:
   start: '6:00:00'
