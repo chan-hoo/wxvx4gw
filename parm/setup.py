@@ -77,8 +77,11 @@ class ConfigGenerator:
         # The wxvx4gw repository root is the parent of parm/.
         self.repo_dir = self.script_dir.parent
 
-        # exp_cases is a sibling of the wxvx4gw repository.
-        self.exp_cases_dir = self.repo_dir.parent / "exp_cases"
+        # Experiment cases directory under the repository root.
+        self.exp_cases_dir = self.repo_dir / "exp_cases"
+        
+        # Default OPS directory under the repository root.
+        self.default_ops_path = self.repo_dir / "PTMP"
 
         self.config: dict[str, Any] = {}
 
@@ -123,6 +126,30 @@ class ConfigGenerator:
         )
 
         return self.config
+
+    # -----------------------------------------------------------------
+    # Resolve configuration parms when set to AUTO
+    # -----------------------------------------------------------------
+
+    def resolve_auto_paths(self) -> None:
+        """Resolve configuration parameters that use the AUTO keyword."""
+    
+        nco_vars = self.config.get("nco_vars", {})
+    
+        if not isinstance(nco_vars, dict):
+            raise ValueError(
+                "The 'nco_vars' group must be a YAML mapping."
+            )
+    
+        ops_path = nco_vars.get("OPS_PATH")
+    
+        if isinstance(ops_path, str) and ops_path.strip().upper() == "AUTO":
+            nco_vars["OPS_PATH"] = str(self.default_ops_path)
+    
+            logger.info(
+                "Resolved OPS_PATH=AUTO to %s",
+                nco_vars["OPS_PATH"],
+            )
 
     # -----------------------------------------------------------------
     # Determine the output directory
@@ -286,6 +313,9 @@ class ConfigGenerator:
     def generate(self) -> list[Path]:
         """Generate a configuration file for every configured task."""
         self.load_config()
+
+        # Resolve AUTO parameters before building task configurations.
+        self.resolve_auto_paths()
 
         output_dir = self.get_output_dir()
 

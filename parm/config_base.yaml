@@ -5,7 +5,7 @@ app:
 nco_vars:
   envir: test
   NET: test_net
-  OPS_PATH: /path/to/ops/dir
+  OPS_PATH: AUTO
   RUN: test_run
 common:
   cycles:
@@ -69,11 +69,12 @@ vx_common:
     step: '6:00:00'
     stop: '24'
   meta:
-    workdir: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/vx/grid2grid/global
-    grids: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/vx/grid2grid/global/grids
     max_leadtime: 24
-    post_files: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/vx/postprocessed_files/global
+    post_files: AUTO
 vx_grid2grid:
+  meta:
+    workdir: AUTO
+    grids: AUTO
   truth:
     name: GFS
     type: grid
@@ -84,10 +85,13 @@ vx_grid2grid:
     to: forecast
   paths:
     grids:
-      forecast: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/vx/grid2grid/global/grids/forecast
-      truth: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/vx/grid2grid/global/grids/truth
-    run: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/vx/grid2grid/global/run
+      forecast: AUTO
+      truth: AUTO
+    run: AUTO
 vx_grid2obs:
+  meta:
+    workdir: AUTO
+    grids: AUTO
   truth:
     name: PREPBUFR
     type: point
@@ -97,9 +101,9 @@ vx_grid2obs:
     to: G104
   paths:
     grids:
-      forecast: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/vx/grid2obs/global/forecast
-    obs: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/vx/grid2obs/global/obs
-    run: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/vx/grid2obs/global/run
+      forecast: AUTO
+    obs: AUTO
+    run: AUTO
 prewxvx:
   lam_index: 64220
   lcc_info:
@@ -108,20 +112,20 @@ prewxvx:
   anemoi_reference_dataset_kwargs:
     adjust: all
     cutout:
-    - dataset: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/data/hrrr.zarr
+    - dataset: AUTO
       trim_edge:
       - 10
       - 11
       - 10
       - 11
-    - dataset: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/data/gfs.zarr
+    - dataset: AUTO
     min_distance_km: 0
   forecast_regrid_kwargs:
     regridder_kwargs:
       method: conservative_normed
-    target_grid_path: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/data/global_one_degree.nc
+    target_grid_path: AUTO
 plot:
-  work_path: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/vx/grid2grid/global
+  work_path: AUTO
   stat_prefix: grid_stat_nested_global
 tasks:
   prewxvx:
