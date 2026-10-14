@@ -52,6 +52,80 @@ logger = logging.getLogger(__name__)
 class ConfigGenerator:
     """Generate flattened YAML configuration files for WXVX tasks."""
 
+    # -----------------------------------------------------------------
+    # Parameter-specific default values when AUTO
+    # -----------------------------------------------------------------
+
+    AUTO_RULES = {
+        "nco_vars.OPS_PATH": "{repo_dir}/PTMP",
+        "vx_common.meta.post_files":(
+            "test1"
+            ),
+        "vx_common.forecast.path":(
+            '{{ meta.post_files }}/nested-global.'
+            '{{ yyyymmdd[:4] }}-{{ yyyymmdd[4:6] }}-'
+            '{{ yyyymmdd[6:8] }}T{{ hh }}.'
+            '{{ "%02d" % meta.max_leadtime }}h.nc'
+            ),
+        "vx_grid2grid.meta.workdir":(
+            "test2"
+            ),
+        "vx_grid2grid.meta.grids":(
+            "test3"
+            ),
+        "vx_grid2grid.truth.url":(
+            'https://noaa-gfs-bdp-pds.s3.amazonaws.com/'
+            'gfs.{{ yyyymmdd }}/{{ hh }}/atmos/'
+            'gfs.t{{ hh }}z.pgrb2.0p25.f{{ "%03d" % fh }}'
+            ),
+        "vx_grid2grid.paths.grids.forecast":(
+            "test4"
+            ),
+        "vx_grid2grid.paths.grids.truth":(
+            "test5"
+            ),
+        "vx_grid2grid.paths.run":(
+            "test6"
+            ),
+        "vx_grid2obs.meta.workdir":(
+            "test7"
+            ),
+        "vx_grid2obs.meta.grids":(
+            "test8"
+            ),
+        "vx_grid2obs.truth.url":(
+            'https://noaa-reanalyses-pds.s3.amazonaws.com/'
+            'observations/reanalysis/conv/prepbufr/'
+            '{{ yyyymmdd[:4] }}/{{ yyyymmdd[4:6] }}/prepbufr/'
+            'gdas.{{ yyyymmdd }}.t{{ hh }}z.prepbufr.nr'
+            ),
+        "vx_grid2obs.paths.grids.forecast":(
+            "test9"
+            ),
+        "vx_grid2obs.paths.obs":(
+            "test10"
+            ),
+        "vx_grid2obs.paths.run":(
+            "test11"
+            ),
+        "prewxvx.anemoi_reference_dataset_kwargs.cutout[0].dataset":(
+            "test12"
+            ),
+        "prewxvx.anemoi_reference_dataset_kwargs.cutout[1].dataset":(
+            "test13"
+            ),
+        "prewxvx.forecast_regrid_kwargs.target_grid_path":(
+            "test14"
+            ),
+        "plot.work_path":(
+            "test15"
+            ),
+    }
+
+    # -----------------------------------------------------------------
+    # Initialize
+    # -----------------------------------------------------------------
+
     def __init__(
         self,
         config_file: str | Path = "config_base.yaml",
@@ -131,25 +205,112 @@ class ConfigGenerator:
     # Resolve configuration parms when set to AUTO
     # -----------------------------------------------------------------
 
-    def resolve_auto_paths(self) -> None:
-        """Resolve configuration parameters that use the AUTO keyword."""
+    def get_auto_context(self) -> dict[str, str]:
+        """Collect values used to resolve AUTO parameters."""
     
-        nco_vars = self.config.get("nco_vars", {})
+        context = {
+            "repo_dir": str(self.repo_dir),
+        }
     
-        if not isinstance(nco_vars, dict):
+        for group_name in ("app", "nco_vars"):
+            group = self.config.get(group_name, {})
+    
+            if not isinstance(group, dict):
+                raise ValueError(
+                    f"Configuration group '{group_name}' must be a mapping."
+                )
+    
+            for key, value in group.items():
+                if value is not None and not isinstance(value, (dict, list)):
+                    context[key] = str(value)
+    
+        return context
+
+
+    def resolve_auto_value(
+        self,
+        parameter_name: str,
+        context: dict[str, str],
+        full_path: str,
+    ) -> Any:
+        """Resolve AUTO values using their full configuration paths."""
+    
+        template = self.AUTO_RULES.get(full_path)
+    
+        if template is None:
             raise ValueError(
-                "The 'nco_vars' group must be a YAML mapping."
+                f"No AUTO resolution rule defined for '{full_path}'."
             )
     
-        ops_path = nco_vars.get("OPS_PATH")
+        # Preserve Jinja2 expressions exactly.
+        return template
+
+
+    def resolve_auto_parameters(self) -> None:
+        """Resolve AUTO values in nested dictionaries and lists."""
     
-        if isinstance(ops_path, str) and ops_path.strip().upper() == "AUTO":
-            nco_vars["OPS_PATH"] = str(self.default_ops_path)
+        context = self.get_auto_context()
     
-            logger.info(
-                "Resolved OPS_PATH=AUTO to %s",
-                nco_vars["OPS_PATH"],
-            )
+        def resolve_value(value: Any, prefix: str = "") -> Any:
+            """Recursively resolve AUTO values."""
+    
+            if isinstance(value, dict):
+                for key, item in value.items():
+                    full_path = f"{prefix}.{key}" if prefix else key
+    
+                    value[key] = resolve_value(
+                        item,
+                        prefix=full_path,
+                    )
+    
+                return value
+    
+            if isinstance(value, list):
+                for index, item in enumerate(value):
+                    value[index] = resolve_value(
+                        item,
+                        prefix=f"{prefix}[{index}]",
+                    )
+    
+                return value
+    
+            if isinstance(value, str) and value.strip().upper() == "AUTO":
+                template = self.AUTO_RULES.get(prefix)
+    
+                if template is None:
+                    raise ValueError(
+                        f"No AUTO resolution rule defined for '{prefix}'."
+                    )
+    
+                try:
+                    resolved = template.format_map(context)
+                except KeyError as exc:
+                    raise ValueError(
+                        f"Cannot resolve '{prefix}': missing context "
+                        f"parameter {exc.args[0]!r}."
+                    ) from exc
+    
+                logger.info("Resolved %s=AUTO to %s", prefix, resolved)
+    
+                return resolved
+    
+            return value
+    
+        for group_name, group_config in self.config.items():
+            if group_name == "tasks":
+                continue
+    
+            if (
+                group_name.startswith("config_")
+                and isinstance(group_config, list)
+            ):
+                continue
+    
+            if isinstance(group_config, (dict, list)):
+                self.config[group_name] = resolve_value(
+                    group_config,
+                    prefix=group_name,
+                )
 
     # -----------------------------------------------------------------
     # Recursively merge group parameters
@@ -247,12 +408,16 @@ class ConfigGenerator:
         group_names: list[str],
     ) -> dict[str, Any]:
         """
-        Combine parameter groups specified for a task.
+        Build a flattened configuration for a task.
     
-        Nested dictionaries are merged recursively.
-        Group names are not included in the resulting configuration.
-        Later groups take precedence when the same parameter exists
-        in multiple groups.
+        A configuration group can be:
+          1. A dictionary containing parameter values.
+          2. A list of other configuration group names.
+    
+        List-based groups are expanded recursively.
+    
+        Nested dictionaries are merged recursively, and values from
+        later groups take precedence when parameter names conflict.
         """
         if not isinstance(group_names, list):
             raise ValueError(
@@ -262,46 +427,67 @@ class ConfigGenerator:
     
         task_config: dict[str, Any] = {}
     
-        for group_name in group_names:
-            if not isinstance(group_name, str):
-                raise ValueError(
-                    f"Task '{task_name}' contains an invalid "
-                    f"group name: {group_name!r}"
-                )
+        def merge_groups(
+            names: list[str],
+            target: dict[str, Any],
+            visited: set[str] | None = None,
+        ) -> None:
+            """Recursively expand and merge configuration groups."""
     
-            if group_name == "tasks":
-                raise ValueError(
-                    f"Task '{task_name}' must not include the "
-                    "'tasks' group as a parameter group."
-                )
+            if visited is None:
+                visited = set()
     
-            if group_name not in self.config:
-                raise ValueError(
-                    f"Task '{task_name}' references the undefined "
-                    f"parameter group '{group_name}'."
-                )
+            for group_name in names:
+                if not isinstance(group_name, str):
+                    raise ValueError(
+                        f"Task '{task_name}' contains an invalid "
+                        f"group name: {group_name!r}"
+                    )
     
-            group_config = self.config[group_name]
+                if group_name == "tasks":
+                    raise ValueError(
+                        f"Task '{task_name}' must not include "
+                        "'tasks' as a parameter group."
+                    )
     
-            if not isinstance(group_config, dict):
-                raise ValueError(
-                    f"Parameter group '{group_name}' must be "
-                    "a YAML mapping."
-                )
+                if group_name not in self.config:
+                    raise ValueError(
+                        f"Task '{task_name}' references the undefined "
+                        f"parameter group '{group_name}'."
+                    )
     
-            logger.debug(
-                "Task '%s': merging group '%s'.",
-                task_name,
-                group_name,
-            )
+                group_config = self.config[group_name]
     
-            # Recursively merge dictionaries instead of replacing them.
-            self.deep_merge(task_config, group_config)
+                if isinstance(group_config, list):
+                    # Expand reusable groups such as config_common.
+                    if group_name in visited:
+                        raise ValueError(
+                            f"Circular configuration reference detected "
+                            f"for group '{group_name}' in task '{task_name}'."
+                        )
+    
+                    merge_groups(
+                        group_config,
+                        target,
+                        visited | {group_name},
+                    )
+    
+                elif isinstance(group_config, dict):
+                    # Merge actual parameter values.
+                    self.deep_merge(target, group_config)
+    
+                else:
+                    raise ValueError(
+                        f"Configuration group '{group_name}' must be "
+                        "a dictionary or a list of group names."
+                    )
+    
+        merge_groups(group_names, task_config)
     
         logger.info(
-            "Task '%s': combined %d parameter group(s).",
+            "Task '%s': generated %d top-level parameters.",
             task_name,
-            len(group_names),
+            len(task_config),
         )
     
         return task_config
@@ -338,52 +524,67 @@ class ConfigGenerator:
     # -----------------------------------------------------------------
 
     def generate(self) -> list[Path]:
-        """Generate a configuration file for every configured task."""
+        """Generate reusable configuration groups and task configurations."""
+    
         self.load_config()
 
-        # Resolve AUTO parameters before building task configurations.
-        self.resolve_auto_paths()
-
+        # Resolve all AUTO parameters before generating YAML files.
+        self.resolve_auto_parameters()
+    
         output_dir = self.get_output_dir()
-
         generated_files: list[Path] = []
-
+    
+        # Generate reusable configuration files, such as config_common.yaml.
+        for group_name, group_definition in self.config.items():
+    
+            if not group_name.startswith("config_"):
+                continue
+    
+            if not isinstance(group_definition, list):
+                raise ValueError(
+                    f"Reusable group '{group_name}' must be a list "
+                    "of parameter group names."
+                )
+    
+            config_name = group_name.removeprefix("config_")
+    
+            group_config = self.build_task_config(
+                task_name=config_name,
+                group_names=[group_name],
+            )
+    
+            output_file = self.write_task_config(
+                task_name=config_name,
+                task_config=group_config,
+                output_dir=output_dir,
+            )
+    
+            generated_files.append(output_file)
+    
+        # Generate task-specific configuration files.
         tasks = self.config["tasks"]
-
+    
         for task_name, group_names in tasks.items():
-            if not isinstance(task_name, str) or not task_name.strip():
-                raise ValueError(
-                    f"Invalid task name: {task_name!r}"
-                )
-
-            if (
-                Path(task_name).name != task_name
-                or task_name in {".", ".."}
-            ):
-                raise ValueError(
-                    f"Invalid task name: {task_name!r}"
-                )
-
+    
             task_config = self.build_task_config(
                 task_name=task_name,
                 group_names=group_names,
             )
-
+    
             output_file = self.write_task_config(
                 task_name=task_name,
                 task_config=task_config,
                 output_dir=output_dir,
             )
-
+    
             generated_files.append(output_file)
-
+    
         logger.info(
             "Successfully generated %d configuration file(s).",
             len(generated_files),
         )
-
+    
         return generated_files
-
 
 # ---------------------------------------------------------------------
 # Command-line interface

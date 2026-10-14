@@ -4,9 +4,25 @@ app:
   platform: ursa
 nco_vars:
   envir: test
+  model_ver: v0.0.1
   NET: test_net
   OPS_PATH: AUTO
   RUN: test_run
+config_common:
+  - app
+  - nco_vars
+tasks:
+  prewxvx:
+    - common
+    - prewxvx
+  vx_grid2grid:
+    - common
+    - vx_common
+    - vx_grid2grid
+  vx_grid2obs:
+    - common
+    - vx_common
+    - vx_grid2obs
 common:
   cycles:
     start: 2022-02-03T12:00:00
@@ -63,7 +79,7 @@ vx_common:
     name: nested_global
     projection:
       proj: latlon
-    path: '{{ meta.post_files }}/nested-global.{{ yyyymmdd[:4] }}-{{ yyyymmdd[4:6] }}-{{ yyyymmdd[6:8] }}T{{ hh }}.{{ "%02d" % meta.max_leadtime }}h.nc'
+    path: AUTO
   leadtimes:
     start: '6:00:00'
     step: '6:00:00'
@@ -78,7 +94,7 @@ vx_grid2grid:
   truth:
     name: GFS
     type: grid
-    url: https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.{{ yyyymmdd }}/{{ hh }}/atmos/gfs.t{{ hh }}z.pgrb2.0p25.f{{ "%03d" % fh }}
+    url: AUTO
   ncdiffs: true
   regrid:
     method: NEAREST
@@ -95,7 +111,7 @@ vx_grid2obs:
   truth:
     name: PREPBUFR
     type: point
-    url: https://noaa-reanalyses-pds.s3.amazonaws.com/observations/reanalysis/conv/prepbufr/{{ yyyymmdd[:4] }}/{{ yyyymmdd[4:6] }}/prepbufr/gdas.{{ yyyymmdd }}.t{{ hh }}z.prepbufr.nr
+    url: AUTO
   regrid:
     method: BILIN
     to: G104
@@ -127,22 +143,4 @@ prewxvx:
 plot:
   work_path: AUTO
   stat_prefix: grid_stat_nested_global
-tasks:
-  prewxvx:
-    - app
-    - nco_vars
-    - common
-    - prewxvx
-  vx_grid2grid:
-    - app
-    - nco_vars
-    - common
-    - vx_common
-    - vx_grid2grid
-  vx_grid2obs:
-    - app
-    - nco_vars
-    - common
-    - vx_common
-    - vx_grid2obs
 
