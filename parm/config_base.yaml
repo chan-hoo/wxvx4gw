@@ -140,7 +140,4 @@ prewxvx:
     regridder_kwargs:
       method: conservative_normed
     target_grid_path: AUTO
-plot:
-  work_path: AUTO
-  stat_prefix: grid_stat_nested_global
 

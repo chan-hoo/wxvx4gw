@@ -58,67 +58,42 @@ class ConfigGenerator:
 
     AUTO_RULES = {
         "nco_vars.OPS_PATH": "{repo_dir}/PTMP",
-        "vx_common.meta.post_files":(
-            "test1"
-            ),
+        "vx_common.meta.post_files": "{COMINOUT}/vx/post_files",
         "vx_common.forecast.path":(
             '{{ meta.post_files }}/nested-global.'
             '{{ yyyymmdd[:4] }}-{{ yyyymmdd[4:6] }}-'
             '{{ yyyymmdd[6:8] }}T{{ hh }}.'
             '{{ "%02d" % meta.max_leadtime }}h.nc'
             ),
-        "vx_grid2grid.meta.workdir":(
-            "test2"
-            ),
-        "vx_grid2grid.meta.grids":(
-            "test3"
-            ),
+        "vx_grid2grid.meta.workdir": "{COMINOUT}/vx/grid2grid",
+        "vx_grid2grid.meta.grids": "{COMINOUT}/vx/grid2grid/grids",
         "vx_grid2grid.truth.url":(
             'https://noaa-gfs-bdp-pds.s3.amazonaws.com/'
             'gfs.{{ yyyymmdd }}/{{ hh }}/atmos/'
             'gfs.t{{ hh }}z.pgrb2.0p25.f{{ "%03d" % fh }}'
             ),
-        "vx_grid2grid.paths.grids.forecast":(
-            "test4"
-            ),
-        "vx_grid2grid.paths.grids.truth":(
-            "test5"
-            ),
-        "vx_grid2grid.paths.run":(
-            "test6"
-            ),
-        "vx_grid2obs.meta.workdir":(
-            "test7"
-            ),
-        "vx_grid2obs.meta.grids":(
-            "test8"
-            ),
+        "vx_grid2grid.paths.grids.forecast": "{COMINOUT}/vx/grid2grid/grids/forecast",
+        "vx_grid2grid.paths.grids.truth": "{COMINOUT}/vx/grid2grid/grids/truth",
+        "vx_grid2grid.paths.run": "{COMINOUT}/vx/grid2grid/run",
+        "vx_grid2obs.meta.workdir": "{COMINOUT}/vx/grid2obs",
+        "vx_grid2obs.meta.grids": "{COMINOUT}/vx/grid2obs/grids",
         "vx_grid2obs.truth.url":(
             'https://noaa-reanalyses-pds.s3.amazonaws.com/'
             'observations/reanalysis/conv/prepbufr/'
             '{{ yyyymmdd[:4] }}/{{ yyyymmdd[4:6] }}/prepbufr/'
             'gdas.{{ yyyymmdd }}.t{{ hh }}z.prepbufr.nr'
             ),
-        "vx_grid2obs.paths.grids.forecast":(
-            "test9"
-            ),
-        "vx_grid2obs.paths.obs":(
-            "test10"
-            ),
-        "vx_grid2obs.paths.run":(
-            "test11"
-            ),
+        "vx_grid2obs.paths.grids.forecast": "{COMINOUT}/vx/grid2obs/forecast",
+        "vx_grid2obs.paths.obs": "{COMINOUT}/vx/grid2obs/obs",
+        "vx_grid2obs.paths.run": "{COMINOUT}/vx/grid2obs/run",
         "prewxvx.anemoi_reference_dataset_kwargs.cutout[0].dataset":(
-            "test12"
+            "{COMINOUT}/data/hrrr.zarr"
             ),
         "prewxvx.anemoi_reference_dataset_kwargs.cutout[1].dataset":(
-            "test13"
+            "{COMINOUT}/data/gfs.zarr"
             ),
         "prewxvx.forecast_regrid_kwargs.target_grid_path":(
-            "test14"
-            ),
-        "plot.work_path":(
-            "test15"
+            "{COMINOUT}/data/global_one_degree.nc"
             ),
     }
 
@@ -206,12 +181,13 @@ class ConfigGenerator:
     # -----------------------------------------------------------------
 
     def get_auto_context(self) -> dict[str, str]:
-        """Collect values used to resolve AUTO parameters."""
+        """Collect configuration values and construct common paths."""
     
         context = {
             "repo_dir": str(self.repo_dir),
         }
     
+        # Collect parameters from app and nco_vars.
         for group_name in ("app", "nco_vars"):
             group = self.config.get(group_name, {})
     
@@ -223,6 +199,37 @@ class ConfigGenerator:
             for key, value in group.items():
                 if value is not None and not isinstance(value, (dict, list)):
                     context[key] = str(value)
+    
+        # Resolve OPS_PATH=AUTO before constructing COMINOUT.
+        ops_path = context.get("OPS_PATH")
+    
+        if ops_path is None or ops_path.strip().upper() == "AUTO":
+            ops_path = str(self.default_ops_path)
+    
+        context["OPS_PATH"] = ops_path
+    
+        # Construct the COMINOUT directory.
+        required = ("envir", "NET", "model_ver", "RUN")
+        missing = [key for key in required if not context.get(key)]
+    
+        if missing:
+            raise ValueError(
+                "Cannot construct cominout. Missing parameters: "
+                + ", ".join(missing)
+            )
+    
+        COMINOUT = (
+            Path(ops_path)
+            / context["envir"]
+            / context["NET"]
+            / context["model_ver"]
+            / context["RUN"]
+        )
+    
+        context["COMINOUT"] = str(COMINOUT)
+    
+        logger.info("OPS_PATH: %s", ops_path)
+        logger.info("COMINOUT: %s", COMINOUT)
     
         return context
 
@@ -274,19 +281,28 @@ class ConfigGenerator:
     
                 return value
 
-
             if isinstance(value, str) and value.strip().upper() == "AUTO":
+                template = self.AUTO_RULES.get(prefix)
             
-                resolved = self.resolve_auto_value(
-                    parameter_name=prefix.rsplit(".", 1)[-1],
-                    context=context,
-                    full_path=prefix,
-                )
+                if template is None:
+                    raise ValueError(
+                        f"No AUTO resolution rule defined for '{prefix}'."
+                    )
             
-                logger.info("Resolved %s=AUTO", prefix)
+                # Preserve Jinja2 expressions; format ordinary path templates.
+                if "{{" in template and "}}" in template:
+                    resolved = template
+                else:
+                    try:
+                        resolved = template.format_map(context)
+                    except KeyError as exc:
+                        raise ValueError(
+                            f"Cannot resolve '{prefix}': missing context "
+                            f"parameter {exc.args[0]!r}."
+                        ) from exc
             
                 return resolved
-    
+
             return value
     
         for group_name, group_config in self.config.items():
