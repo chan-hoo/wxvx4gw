@@ -273,25 +273,18 @@ class ConfigGenerator:
                     )
     
                 return value
-    
+
+
             if isinstance(value, str) and value.strip().upper() == "AUTO":
-                template = self.AUTO_RULES.get(prefix)
-    
-                if template is None:
-                    raise ValueError(
-                        f"No AUTO resolution rule defined for '{prefix}'."
-                    )
-    
-                try:
-                    resolved = template.format_map(context)
-                except KeyError as exc:
-                    raise ValueError(
-                        f"Cannot resolve '{prefix}': missing context "
-                        f"parameter {exc.args[0]!r}."
-                    ) from exc
-    
-                logger.info("Resolved %s=AUTO to %s", prefix, resolved)
-    
+            
+                resolved = self.resolve_auto_value(
+                    parameter_name=prefix.rsplit(".", 1)[-1],
+                    context=context,
+                    full_path=prefix,
+                )
+            
+                logger.info("Resolved %s=AUTO", prefix)
+            
                 return resolved
     
             return value
