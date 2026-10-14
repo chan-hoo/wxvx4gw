@@ -145,14 +145,4 @@ tasks:
     - common
     - vx_common
     - vx_grid2obs
-  plot_vx_grid:
-    - app
-    - nco_vars
-    - common
-    - plot
-  plot_vx_obs:
-    - app
-    - nco_vars
-    - common
-    - plot
 

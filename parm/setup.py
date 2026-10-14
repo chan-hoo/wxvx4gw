@@ -199,7 +199,7 @@ class ConfigGenerator:
         output_dir = (
             self.exp_cases_dir
             / exp_case_name
-            / "config"
+            / "configs"
         )
 
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -300,6 +300,7 @@ class ConfigGenerator:
                 default_flow_style=False,
                 sort_keys=False,
                 allow_unicode=True,
+                width=float("inf"),
             )
 
         logger.info("Generated: %s", output_file)
