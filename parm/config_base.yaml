@@ -124,29 +124,29 @@ plot:
   work_path: /scratch3/NAGAPE/epic/Chan-hoo.Jeon/EAGLE/run/default/vx/grid2grid/global
   stat_prefix: grid_stat_nested_global
 tasks:
-  - prewxvx
+  prewxvx
     - app
     - nco_vars
     - common
     - prewxvx
-  - vx_grid2grid
+  vx_grid2grid
     - app
     - nco_vars
     - common
     - vx_common
     - vx_grid2grid
-  - vx_grid2obs
+  vx_grid2obs
     - app
     - nco_vars
     - common
     - vx_common
     - vx_grid2obs
-  - plot_vx_grid
+  plot_vx_grid
     - app
     - nco_vars
     - common
     - plot
-  - plot_vx_obs
+  plot_vx_obs
     - app
     - nco_vars
     - common
