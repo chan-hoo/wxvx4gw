@@ -152,6 +152,35 @@ class ConfigGenerator:
             )
 
     # -----------------------------------------------------------------
+    # Recursively merge group parameters
+    # -----------------------------------------------------------------
+
+    def deep_merge(
+        self,
+        target: dict,
+        source: dict,
+    ) -> dict:
+        """
+        Recursively merge source into target.
+    
+        - Preserve parameters that exist only in either dictionary.
+        - Recursively merge nested dictionaries.
+        - If the same parameter exists in both dictionaries,
+          the value from source takes precedence.
+        """
+        for key, value in source.items():
+            if (
+                key in target
+                and isinstance(target[key], dict)
+                and isinstance(value, dict)
+            ):
+                self.deep_merge(target[key], value)
+            else:
+                target[key] = value
+    
+        return target
+
+    # -----------------------------------------------------------------
     # Determine the output directory
     # -----------------------------------------------------------------
 
@@ -218,66 +247,63 @@ class ConfigGenerator:
         group_names: list[str],
     ) -> dict[str, Any]:
         """
-        Combine the parameter groups specified for a task.
-
-        Group names are not included in the resulting dictionary.
-
-        If a parameter occurs in multiple groups, the value from
-        the last group takes precedence.
+        Combine parameter groups specified for a task.
+    
+        Nested dictionaries are merged recursively.
+        Group names are not included in the resulting configuration.
+        Later groups take precedence when the same parameter exists
+        in multiple groups.
         """
         if not isinstance(group_names, list):
             raise ValueError(
                 f"Task '{task_name}' must specify a list of "
                 "parameter group names."
             )
-
+    
         task_config: dict[str, Any] = {}
-
+    
         for group_name in group_names:
             if not isinstance(group_name, str):
                 raise ValueError(
                     f"Task '{task_name}' contains an invalid "
                     f"group name: {group_name!r}"
                 )
-
+    
             if group_name == "tasks":
                 raise ValueError(
                     f"Task '{task_name}' must not include the "
                     "'tasks' group as a parameter group."
                 )
-
+    
             if group_name not in self.config:
                 raise ValueError(
                     f"Task '{task_name}' references the undefined "
                     f"parameter group '{group_name}'."
                 )
-
+    
             group_config = self.config[group_name]
-
+    
             if not isinstance(group_config, dict):
                 raise ValueError(
                     f"Parameter group '{group_name}' must be "
                     "a YAML mapping."
                 )
-
+    
             logger.debug(
-                "Task '%s': adding group '%s'.",
+                "Task '%s': merging group '%s'.",
                 task_name,
                 group_name,
             )
-
-            # Flatten the group into the task configuration.
-            # Later groups override earlier groups on key conflicts.
-            task_config.update(group_config)
-
+    
+            # Recursively merge dictionaries instead of replacing them.
+            self.deep_merge(task_config, group_config)
+    
         logger.info(
-            "Task '%s': combined %d parameter group(s), "
-            "resulting in %d parameter(s).",
+            "Task '%s': combined %d parameter group(s).",
             task_name,
             len(group_names),
-            len(task_config),
         )
-
+    
         return task_config
 
     # -----------------------------------------------------------------
