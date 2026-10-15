@@ -9,6 +9,27 @@ nco_vars:
   NET: test_net
   OPS_PATH: AUTO
   RUN: test_run
+hpc:
+  prewxvx:
+    memory_per_node: 128G
+    nprocs: 1
+    walltime: "00:30:00"
+  vx_grid2grid:
+    memory_per_node: 128G
+    nprocs: 1
+    walltime: "00:30:00"
+  vx_grid2obs:
+    memory_per_node: 128G
+    nprocs: 1
+    walltime: "00:30:00"
+  plot_vx_grid:
+    memory_per_node: 128G
+    nprocs: 1
+    walltime: "00:30:00"
+  plot_vx_obs:
+    memory_per_node: 128G
+    nprocs: 1
+    walltime: "00:30:00"
 config_common:
   - app
   - nco_vars
