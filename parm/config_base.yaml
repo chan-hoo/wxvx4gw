@@ -9,48 +9,52 @@ nco_vars:
   NET: test_net
   OPS_PATH: AUTO
   RUN: test_run
-hpc:
-  prewxvx:
-    memory_per_node: 128G
-    nprocs: 1
-    walltime: "00:30:00"
-  vx_grid2grid:
-    memory_per_node: 128G
-    nprocs: 1
-    walltime: "00:30:00"
-  vx_grid2obs:
-    memory_per_node: 128G
-    nprocs: 1
-    walltime: "00:30:00"
-  plot_vx_grid:
-    memory_per_node: 128G
-    nprocs: 1
-    walltime: "00:30:00"
-  plot_vx_obs:
-    memory_per_node: 128G
-    nprocs: 1
-    walltime: "00:30:00"
 config_common:
   - app
   - nco_vars
 tasks:
   prewxvx:
-    - common
-    - prewxvx
+    groups:
+      - common
+      - prewxvx
+    hpc:
+      memory_per_node: 128G
+      nprocs: 1
+      walltime: "00:30:00"
   vx_grid2grid:
-    - common
-    - vx_common
-    - vx_grid2grid
+    groups:
+      - common
+      - vx_common
+      - vx_grid2grid
+    hpc:
+      memory_per_node: 128G
+      nprocs: 1
+      walltime: "00:30:00"
   vx_grid2obs:
-    - common
-    - vx_common
-    - vx_grid2obs
+    groups:
+      - common
+      - vx_common
+      - vx_grid2obs
+    hpc:
+      memory_per_node: 128G
+      nprocs: 1
+      walltime: "00:30:00"
   plot_vx_grid:
-    - common
-    - plot_vx_grid
+    groups:
+      - common
+      - plot_vx_grid
+    hpc:
+      memory_per_node: 128G
+      nprocs: 1
+      walltime: "00:30:00"
   plot_vx_obs:
-    - common
-    - plot_vx_obs
+    groups:
+      - common
+      - plot_vx_obs
+    hpc:
+      memory_per_node: 128G
+      nprocs: 1
+      walltime: "00:30:00"
 common:
   cycles:
     start: '2022-02-03T12:00:00'

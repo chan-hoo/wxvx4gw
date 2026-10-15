@@ -467,6 +467,7 @@ class ConfigGenerator:
         self,
         task_name: str,
         group_names: list[str],
+        hpc_params: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """
         Build a flattened configuration for a task.
@@ -482,9 +483,12 @@ class ConfigGenerator:
                 f"Task '{task_name}' must specify a list of "
                 "parameter group names."
             )
-    
+
         task_config: dict[str, Any] = {}
-    
+        
+        if hpc_params is None:
+            hpc_params = {}
+
         def merge_groups(
             names: list[str],
             target: dict[str, Any],
@@ -556,7 +560,7 @@ class ConfigGenerator:
     
         # Merge the remaining task configuration groups.
         merge_groups(group_names, task_config)
-    
+
         # -------------------------------------------------------------
         # Add platform-specific parameters to config_common.yaml.
         # -------------------------------------------------------------
@@ -761,15 +765,34 @@ class ConfigGenerator:
             generated_files.append(output_file)
     
         # Generate task-specific configuration files.
-        tasks = self.config["tasks"]
-    
-        for task_name, group_names in tasks.items():
-    
+        tasks = self.config.get("tasks", {})
+        
+        for task_name, task_definition in tasks.items():
+
+            if not isinstance(task_definition, dict):
+                raise ValueError(
+                    f"Task '{task_name}' must be a dictionary."
+                )
+        
+            group_names = task_definition.get("groups", [])
+            hpc_params = task_definition.get("hpc", {})
+        
+            if not isinstance(group_names, list):
+                raise ValueError(
+                    f"Task '{task_name}': 'groups' must be a list."
+                )
+        
+            if not isinstance(hpc_params, dict):
+                raise ValueError(
+                    f"Task '{task_name}': 'hpc' must be a dictionary."
+                )
+        
             task_config = self.build_task_config(
                 task_name=task_name,
                 group_names=group_names,
+                hpc_params=hpc_params,
             )
-    
+
             output_file = self.write_task_config(
                 task_name=task_name,
                 task_config=task_config,
