@@ -1,0 +1,70 @@
+suite {{ exp_case_name }}
+{%- if COLDSTART == "YES" or TYPE_ANAL_FCST == "fcst-1st" %}
+    family cold_cyc0
+  {%- if SCHED == "slurm" %}
+        edit ECF_JOB_CMD "sbatch %ECF_JOB%"
+  {%- elif SCHED == "pbspro" %}
+        edit ECF_JOB_CMD "qsub %ECF_JOB%"
+  {%- endif %}
+        edit ECF_FILES "{{ exp_case_path }}/ecf/ecf_scripts"
+        edit ECF_DATE {{ yyyymmdd_first }}
+        edit CYC {{ hh_first }}
+  {%- if IC_FROM_FIX_DIR == "NO" %}
+        task jufsda_fcst_ic
+  {%- endif %}
+        task jufsda_prep_data
+        task jufsda_forecast
+  {%- if IC_FROM_FIX_DIR == "NO" %}
+            trigger jufsda_fcst_ic == complete and jufsda_prep_data == complete
+  {%- else %}
+            trigger jufsda_prep_data == complete
+  {%- endif %}
+        task jufsda_plot_stats
+            trigger jufsda_forecast == complete
+    endfamily
+{%- endif %}
+
+{%- if ( COLDSTART == "YES" and yyyymmdd_second is not none ) or COLDSTART == "NO" or TYPE_ANAL_FCST == "ctest" %}
+    family cycle
+  {%- if COLDSTART == "YES" %}
+        trigger cold_cyc0 == complete
+        repeat date YMD {{ yyyymmdd_second }} {{ yyyymmdd_last }} {{ date_cycle_freq_day }}
+  {%- else %}
+        repeat date YMD {{ yyyymmdd_first }} {{ yyyymmdd_last }} {{ date_cycle_freq_day }}
+  {%- endif %}
+  {%- if SCHED == "slurm" %}
+        edit ECF_JOB_CMD "sbatch %ECF_JOB%"
+  {%- elif SCHED == "pbspro" %}
+        edit ECF_JOB_CMD "qsub %ECF_JOB%"
+  {%- endif %}
+        edit ECF_FILES "{{ exp_case_path }}/ecf/ecf_scripts"
+        edit ECF_DATE %YMD%
+        edit CYC {{ hh_first }}
+  {%- if TYPE_ANAL_FCST == "ctest" %}
+        task jufsda_analysis
+        task jufsda_plot_stats
+            trigger jufsda_analysis == complete
+  {%- elif TYPE_ANAL_FCST == "fcst-only" %}
+        task jufsda_prep_data
+        task jufsda_forecast
+            trigger jufsda_prep_data == complete
+        task jufsda_plot_stats
+            trigger jufsda_forecast == complete
+  {%- elif TYPE_ANAL_FCST == "anal-only" or TYPE_ANAL_FCST == "fcst-1st" %}
+        task jufsda_prep_data
+        task jufsda_analysis
+            trigger jufsda_prep_data == complete
+        task jufsda_plot_stats
+            trigger jufsda_analysis == complete
+  {%- else %}
+        task jufsda_prep_data
+        task jufsda_analysis
+            trigger jufsda_prep_data == complete
+        task jufsda_forecast
+            trigger jufsda_analysis == complete
+        task jufsda_plot_stats
+            trigger jufsda_forecast == complete
+  {%- endif %}
+    endfamily
+{%- endif %}
+endsuite
