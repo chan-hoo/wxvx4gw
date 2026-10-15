@@ -9,6 +9,7 @@ Expected input structure:
 
     parm/
     ├── config_base.yaml
+    ├── config_platform.yaml
     └── setup.py
 
 Expected output structure:
@@ -31,6 +32,7 @@ import sys
 from pathlib import Path
 from typing import Any
 from datetime import datetime
+from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 import yaml
 
@@ -722,7 +724,165 @@ class ConfigGenerator:
         return output_file
 
     # -----------------------------------------------------------------
-    # Generate configurations for all tasks
+    # Generate job cards / ecf scripts
+    # -----------------------------------------------------------------
+
+    def get_job_card_output_dir(self) -> tuple[Path, str]:
+        """Return the job-card output directory and file suffix."""
+    
+        app_config = self.config.get("app", {})
+        workflow_manager = app_config.get("workflow_manager")
+    
+        exp_case_name = app_config.get("exp_case_name")
+        if not isinstance(exp_case_name, str) or not exp_case_name.strip():
+            raise ValueError("'exp_case_name' must be a non-empty string.")
+    
+        exp_case_name = exp_case_name.strip()
+        case_path = Path(exp_case_name)
+    
+        if (
+            case_path.is_absolute()
+            or len(case_path.parts) != 1
+            or exp_case_name in {".", ".."}
+        ):
+            raise ValueError(f"Invalid exp_case_name: {exp_case_name!r}")
+    
+        exp_case_path = self.exp_cases_dir / exp_case_name
+    
+        if workflow_manager == "ecflow":
+            ecf_suite_family_name = "ecf_scripts"
+            job_card_dir = (
+                exp_case_path / "ecf" / ecf_suite_family_name
+            )
+            job_card_suffix = ".ecf"
+        else:
+            job_card_dir = exp_case_path / "job_cards"
+            job_card_suffix = ""
+    
+        job_card_dir.mkdir(parents=True, exist_ok=True)
+    
+        logger.info("Job-card output directory: %s", job_card_dir)
+    
+        return job_card_dir, job_card_suffix
+    
+    
+    def generate_job_cards(self) -> list[Path]:
+        """Generate job cards for all tasks in config_base.yaml."""
+    
+        # Determine the destination directory and suffix.
+        job_card_dir, job_card_suffix = self.get_job_card_output_dir()
+    
+        # Load the job-card template.
+        template_dir = self.script_dir / "templates"
+    
+        env = Environment(
+            loader=FileSystemLoader(str(template_dir)),
+            undefined=StrictUndefined,
+            keep_trailing_newline=True,
+        )
+    
+        template = env.get_template("template.jobcard_task")
+    
+        # Load platform-specific configuration.
+        platform_file = self.script_dir / "config_platform.yaml"
+    
+        with platform_file.open("r", encoding="utf-8") as stream:
+            platform_config = yaml.safe_load(stream)
+    
+        app_config = self.config.get("app", {})
+        platform_name = app_config.get("platform")
+    
+        platforms = platform_config.get("platforms", {})
+    
+        if platform_name not in platforms:
+            raise ValueError(
+                f"Unknown platform: {platform_name!r}"
+            )
+    
+        platform = platforms[platform_name]
+    
+        # Determine the cycle date.
+        cycles = self.config.get("common", {}).get("cycles", {})
+        start_date = cycles.get("start")
+    
+        if start_date is None:
+            raise ValueError("Missing common.cycles.start.")
+    
+        if isinstance(start_date, datetime):
+            cycle_date = start_date
+        else:
+            cycle_date = datetime.fromisoformat(str(start_date))
+    
+        pdy_cdate = cycle_date.strftime("%Y%m%d")
+        cyc_cdate = cycle_date.strftime("%H")
+    
+        # Generate a job card for each task.
+        generated_files = []
+    
+        for task_name, task_definition in self.config["tasks"].items():
+    
+            if not isinstance(task_definition, dict):
+                raise ValueError(
+                    f"Task '{task_name}' must be a mapping."
+                )
+    
+            hpc = task_definition.get("hpc", {})
+    
+            nprocs = int(hpc.get("nprocs", 1))
+            max_cores = int(platform["max_cores_per_node"])
+    
+            if nprocs < 1 or max_cores < 1:
+                raise ValueError(
+                    f"Invalid process configuration for '{task_name}'."
+                )
+    
+            nnodes = (nprocs + max_cores - 1) // max_cores
+            nprocs_per_node = min(nprocs, max_cores)
+    
+            context = {
+                "account": app_config.get("account"),
+                "task_name": task_name,
+                "task_name_upper": task_name.upper(),
+                "output_name": f"{task_name}.%j.out",
+                "partition_queue": platform["partition_queue"],
+                "qos": platform.get("qos"),
+                "walltime": hpc.get("walltime", "00:30:00"),
+                "nnodes": nnodes,
+                "nprocs_per_node": nprocs_per_node,
+                "memory_flag": bool(hpc.get("memory_per_node")),
+                "memory_per_node": hpc.get("memory_per_node"),
+                "native": platform.get("native"),
+                "sched": platform["sched"],
+                "platform": platform_name,
+                "workflow_manager": app_config.get("workflow_manager"),
+                "HOMEwxvx": str(self.repo_dir),
+                "pdy_cdate": pdy_cdate,
+                "cyc_cdate": cyc_cdate,
+            }
+    
+            # Render the template.
+            rendered = template.render(**context)
+    
+            # Use the directory and suffix returned by the helper.
+            output_file = (
+                job_card_dir
+                / f"jwxvx_{task_name}{job_card_suffix}"
+            )
+    
+            with output_file.open("w", encoding="utf-8") as stream:
+                stream.write(rendered)
+    
+            # Set executable permissions.
+            output_file.chmod(0o755)
+    
+            logger.info("Generated job card: %s", output_file)
+    
+            generated_files.append(output_file)
+    
+        return generated_files
+
+    # -----------------------------------------------------------------
+    # Generate configurations and job cards for all tasks
     # -----------------------------------------------------------------
 
     def generate(self) -> list[Path]:
@@ -805,8 +965,11 @@ class ConfigGenerator:
             "Successfully generated %d configuration file(s).",
             len(generated_files),
         )
-    
-        return generated_files
+
+        # Generate job cards (ecf scripts)
+        job_cards = self.generate_job_cards()
+
+        return generated_files + job_cards
 
 # ---------------------------------------------------------------------
 # Command-line interface

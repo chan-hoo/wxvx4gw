@@ -5,6 +5,7 @@ app:
   workflow_manager: None
 nco_vars:
   envir: test
+  KEEPDATA: 'YES'
   model_ver: v0.0.1
   NET: test_net
   OPS_PATH: AUTO
