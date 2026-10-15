@@ -30,9 +30,28 @@ import logging
 import sys
 from pathlib import Path
 from typing import Any
+from datetime import datetime
 
 import yaml
 
+# ---------------------------------------------------------------------
+# datetime format
+# ---------------------------------------------------------------------
+
+def format_datetime(value):
+    """Format a date as YYYY-MM-DD HH:MM:SS."""
+    if isinstance(value, datetime):
+        return value.strftime("%Y-%m-%d %H:%M:%S")
+
+    if isinstance(value, str):
+        # Accept both T and space separators.
+        return datetime.fromisoformat(value).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+
+    raise TypeError(
+        f"Expected datetime or string, got {type(value).__name__}"
+    )
 
 # ---------------------------------------------------------------------
 # Logging
@@ -88,6 +107,8 @@ class ConfigGenerator:
         "prewxvx.anemoi_reference_dataset_kwargs.cutout[0].dataset": "{COMINOUT}/data/hrrr.zarr",
         "prewxvx.anemoi_reference_dataset_kwargs.cutout[1].dataset": "{COMINOUT}/data/gfs.zarr",
         "prewxvx.forecast_regrid_kwargs.target_grid_path": "{COMINOUT}/data/global_one_degree.nc",
+        "plot_vx_grid.work_path": "{COMINOUT}/vx/grid2grid",
+        "plot_vx_obs.work_path": "{COMINOUT}/vx/grid2obs",
     }
 
     # -----------------------------------------------------------------
@@ -484,47 +505,133 @@ class ConfigGenerator:
                         "a dictionary or a list of group names."
                     )
 
+        # Handle prewxvx separately: do not merge the common group as-is.
+        if task_name == "prewxvx":
+            group_names = [
+                group for group in group_names
+                if group != "common"
+            ]
+
+        # Tasks that require transformed values from the common group.
+        special_tasks = {
+            "prewxvx",
+            "plot_vx_grid",
+            "plot_vx_obs",
+        }
+
+        if task_name in special_tasks:
+            group_names = [
+                group for group in group_names
+                if group != "common"
+            ]
+
         merge_groups(group_names, task_config)
 
-        # Add parameters required by prewxvx.
-        if task_name == "prewxvx":
-            vx_common = self.config.get("vx_common", {})
+        if task_name in special_tasks:
+            common = self.config.get("common", {})
 
-            # cycles
-            cycles = vx_common.get("cycles", {})
-            start = cycles.get("start")
-            stop = cycles.get("stop")
+            cycles = common.get("cycles", {})
+            leadtimes = common.get("leadtimes", {})
+            variables = common.get("variables", {})
 
-            if start is not None:
-                task_config["start_date"] = start.strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                )
+            # Handle prewxvx.
+            if task_name == "prewxvx":
+    
+                # Forecast frequency: '6:00:00' -> '6h'.
+                leadtime_step = leadtimes.get("step")
+                if leadtime_step is not None:
+                    if isinstance(leadtime_step, str) and ":" in leadtime_step:
+                        hours = int(leadtime_step.split(":")[0])
+                        task_config["freq"] = f"{hours}h"
+                    else:
+                        task_config["freq"] = leadtime_step
+    
+                # Maximum forecast lead time: '24' -> 24.
+                leadtime_stop = leadtimes.get("stop")
+                if leadtime_stop is not None:
+                    task_config["lead_time"] = int(leadtime_stop)
+    
+                # Cycle start and end dates.
+                start = cycles.get("start")
+                stop = cycles.get("stop")
 
-            if stop is not None:
-                task_config["end_date"] = stop.strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                )
+                if start is not None:
+                    task_config["start_date"] = format_datetime(start)
+                
+                if stop is not None:
+                    task_config["end_date"] = format_datetime(stop)
+   
+                # Variable names, preserving their configuration order.
+                task_config["vars_of_interest"] = list(variables.keys())
 
-            # variables
-            variables = vx_common.get("variables", {})
-            task_config["vars_of_interest"] = list(variables.keys())
+                pass
 
-            # leadtimes
-            leadtimes = vx_common.get("leadtimes", {})
-            leadtime_step = leadtimes.get("step")
-            leadtime_stop = leadtimes.get("stop")
+            # Handle plotting tasks.
+            elif task_name in {"plot_vx_grid", "plot_vx_obs"}:
 
-            if leadtime_step is not None:
-                # Convert '6:00:00' to '6h'.
-                if isinstance(leadtime_step, str) and ":" in leadtime_step:
-                    hours = int(leadtime_step.split(":")[0])
-                    task_config["freq"] = f"{hours}h"
-                else:
-                    task_config["freq"] = leadtime_step
+                # Start and end dates: preserve the T separator.
+                start = cycles.get("start")
+                stop = cycles.get("stop")
 
-            if leadtime_stop is not None:
-                # Convert the maximum lead time to an integer.
-                task_config["lead_time"] = int(leadtime_stop)
+                if start is not None:
+                    task_config["start_date"] = (
+                        start.isoformat(timespec="seconds")
+                        if hasattr(start, "isoformat")
+                        else str(start)
+                    )
+
+                if stop is not None:
+                    task_config["end_date"] = (
+                        stop.isoformat(timespec="seconds")
+                        if hasattr(stop, "isoformat")
+                        else str(stop)
+                    )
+
+                # Frequency: convert '6:00:00' to '6h'.
+                leadtime_step = leadtimes.get("step")
+
+                if leadtime_step is not None:
+                    if (
+                        isinstance(leadtime_step, str)
+                        and ":" in leadtime_step
+                    ):
+                        hours = int(leadtime_step.split(":")[0])
+                        task_config["freq"] = f"{hours}h"
+                    else:
+                        task_config["freq"] = leadtime_step
+
+                # Convert leadtimes to integer hours.
+                def time_to_hours(value):
+                    if isinstance(value, str) and ":" in value:
+                        hours, minutes, seconds = map(
+                            int, value.split(":")
+                        )
+                        return hours + minutes / 60 + seconds / 3600
+                    return int(value)
+
+                task_config["leadtimes"] = {
+                    "start": time_to_hours(leadtimes["start"]),
+                    "end": time_to_hours(leadtimes["stop"]),
+                    "step": time_to_hours(leadtimes["step"]),
+                }
+
+                # Build variable prefixes from the variable definitions.
+                prefixes = []
+
+                for variable in variables.values():
+                    name = variable["name"]
+                    level_type = variable["level_type"]
+                    levels = variable.get("levels", [])
+
+                    if level_type == "surface":
+                        prefixes.append(f"{name}_{level_type}")
+                    else:
+                        for level in levels:
+                            prefixes.append(
+                                f"{name}_{level_type}_{int(level):04d}"
+                            )
+
+                task_config["variable_prefixes"] = sorted(prefixes)
 
         logger.info(
             "Task '%s': generated %d top-level parameters.",
