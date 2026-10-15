@@ -28,25 +28,14 @@
   {%- endif %}
 {%- endif %}
 
-###########
 set -xue
-###########
 
-## Export environment variables: task-specific
-source {{ exp_case_path }}/task_env/{{ task_name }}.env
-
-## Load module file for task
-{%- if platform == "gaea-c6" %}
-module reset
-{%- else %}
-module purge
-{%- endif %}
-#source {{ HOMEwxvx }}/versions/run.ver_{{ platform }}
-module load nco
-module list
-
-## Environment variables
-### PDY/cyc
+# ---------------------------------------------------------------------
+# Environment variables
+# ---------------------------------------------------------------------
+# Home directory
+export HOMEwxvx={{ HOMEwxvx }}
+# PDY/cyc
 {%- if workflow_manager == "ecflow" %}
 %include <head.h>
 export PDY=%ECF_DATE%
@@ -55,7 +44,7 @@ export cyc=%CYC%
 export PDY="${PDY:-{{ pdy_cdate }}}"
 export cyc="${cyc:-{{ cyc_cdate }}}"
 {%- endif %}
-### job/jobid
+# job/jobid
 {%- if sched == "slurm" %}
 export job="{{ task_name }}.${PDY}${cyc}"
 export jobid="${job}.${SLURM_JOB_ID}"
@@ -64,21 +53,22 @@ export job="{{ task_name }}.${PDY}${cyc}"
 export jobid="${job}.${PBS_JOBID}"
 {%- endif %}
 
-## Export environment variable: job-card level
-source {{ HOMEwxvx }}/parm/jcard_env_setup.sh
+# ---------------------------------------------------------------------
+# Load module file for task
+# ---------------------------------------------------------------------
+{%- if platform == "gaea-c6" %}
+module reset
+{%- else %}
+module purge
+{%- endif %}
+source ${HOMEwxvx}/versions/run.ver_{{ platform }}
+module load prod_util
+module list
 
-#################################
-## Run J-job script
-#################################
-{{ HOMEwxvx }}/jobs/JWXVX_{{ task_name_upper }}.sh
-
-if [ -e "$pgmout" ]; then
-  cat $pgmout
-fi
-if [ "${KEEPDATA}" = "NO" ]; then
-  rm -rf ${DATA}
-fi
-date
+# ---------------------------------------------------------------------
+# Run J-job script
+# ---------------------------------------------------------------------
+${HOMEwxvx}/jobs/JWXVX_{{ task_name_upper }}
 
 {%- if workflow_manager == "ecflow" %}
 %include <tail.h>
