@@ -117,10 +117,17 @@ vx_grid2obs:
     obs: AUTO
     run: AUTO
 prewxvx:
+  forecast_path: AUTO
   lam_index: 64220
   lcc_info:
     n_x: 338
     n_y: 190
+  levels:
+  - 250
+  - 500
+  - 850
+  output_path: AUTO
+  model_type: nested-global
   anemoi_reference_dataset_kwargs:
     adjust: all
     cutout:

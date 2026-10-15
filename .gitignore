@@ -1,7 +1,6 @@
 *.swp
-parm/config.yaml
+parm/exp_cases/
 sorc/conda/
 sorc/condarc
 sorc/activate_wxvx.sh
-exp_cases/
 PTMP/

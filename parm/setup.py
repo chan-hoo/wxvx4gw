@@ -13,7 +13,8 @@ Expected input structure:
 
 Expected output structure:
 
-    ../exp_cases/<exp_case_name>/config/
+    parm/exp_cases/<exp_case_name>/configs/
+        ├── config_common.yaml
         ├── config_<task1>.yaml
         └── config_<task2>.yaml
 
@@ -60,10 +61,8 @@ class ConfigGenerator:
         "nco_vars.OPS_PATH": "{repo_dir}/PTMP",
         "vx_common.meta.post_files": "{COMINOUT}/vx/post_files",
         "vx_common.forecast.path":(
-            '{{ meta.post_files }}/nested-global.'
-            '{{ yyyymmdd[:4] }}-{{ yyyymmdd[4:6] }}-'
-            '{{ yyyymmdd[6:8] }}T{{ hh }}.'
-            '{{ "%02d" % meta.max_leadtime }}h.nc'
+            '{{ meta.post_files }}/nested-global.{{ yyyymmdd[:4] }}-{{ yyyymmdd[4:6] }}-'
+            '{{ yyyymmdd[6:8] }}T{{ hh }}.{{ "%02d" % meta.max_leadtime }}h.nc'
             ),
         "vx_grid2grid.meta.workdir": "{COMINOUT}/vx/grid2grid",
         "vx_grid2grid.meta.grids": "{COMINOUT}/vx/grid2grid/grids",
@@ -78,23 +77,17 @@ class ConfigGenerator:
         "vx_grid2obs.meta.workdir": "{COMINOUT}/vx/grid2obs",
         "vx_grid2obs.meta.grids": "{COMINOUT}/vx/grid2obs/grids",
         "vx_grid2obs.truth.url":(
-            'https://noaa-reanalyses-pds.s3.amazonaws.com/'
-            'observations/reanalysis/conv/prepbufr/'
-            '{{ yyyymmdd[:4] }}/{{ yyyymmdd[4:6] }}/prepbufr/'
-            'gdas.{{ yyyymmdd }}.t{{ hh }}z.prepbufr.nr'
+            'https://noaa-reanalyses-pds.s3.amazonaws.com/observations/reanalysis/conv/prepbufr/'
+            '{{ yyyymmdd[:4] }}/{{ yyyymmdd[4:6] }}/prepbufr/gdas.{{ yyyymmdd }}.t{{ hh }}z.prepbufr.nr'
             ),
         "vx_grid2obs.paths.grids.forecast": "{COMINOUT}/vx/grid2obs/forecast",
         "vx_grid2obs.paths.obs": "{COMINOUT}/vx/grid2obs/obs",
         "vx_grid2obs.paths.run": "{COMINOUT}/vx/grid2obs/run",
-        "prewxvx.anemoi_reference_dataset_kwargs.cutout[0].dataset":(
-            "{COMINOUT}/data/hrrr.zarr"
-            ),
-        "prewxvx.anemoi_reference_dataset_kwargs.cutout[1].dataset":(
-            "{COMINOUT}/data/gfs.zarr"
-            ),
-        "prewxvx.forecast_regrid_kwargs.target_grid_path":(
-            "{COMINOUT}/data/global_one_degree.nc"
-            ),
+        "prewxvx.forecast_path": "{COMINOUT}/inference",
+        "prewxvx.output_path": "{COMINOUT}/vx/post_files",
+        "prewxvx.anemoi_reference_dataset_kwargs.cutout[0].dataset": "{COMINOUT}/data/hrrr.zarr",
+        "prewxvx.anemoi_reference_dataset_kwargs.cutout[1].dataset": "{COMINOUT}/data/gfs.zarr",
+        "prewxvx.forecast_regrid_kwargs.target_grid_path": "{COMINOUT}/data/global_one_degree.nc",
     }
 
     # -----------------------------------------------------------------
@@ -126,8 +119,8 @@ class ConfigGenerator:
         # The wxvx4gw repository root is the parent of parm/.
         self.repo_dir = self.script_dir.parent
 
-        # Experiment cases directory under the repository root.
-        self.exp_cases_dir = self.repo_dir / "exp_cases"
+        # Experiment cases directory under the parm directory.
+        self.exp_cases_dir = self.script_dir / "exp_cases"
         
         # Default OPS directory under the repository root.
         self.default_ops_path = self.repo_dir / "PTMP"
@@ -496,9 +489,9 @@ class ConfigGenerator:
         # Add parameters required by prewxvx.
         if task_name == "prewxvx":
             vx_common = self.config.get("vx_common", {})
-            cycles = vx_common.get("cycles", {})
-            variables = vx_common.get("variables", {})
 
+            # cycles
+            cycles = vx_common.get("cycles", {})
             start = cycles.get("start")
             stop = cycles.get("stop")
 
@@ -512,7 +505,26 @@ class ConfigGenerator:
                     "%Y-%m-%d %H:%M:%S"
                 )
 
+            # variables
+            variables = vx_common.get("variables", {})
             task_config["vars_of_interest"] = list(variables.keys())
+
+            # leadtimes
+            leadtimes = vx_common.get("leadtimes", {})
+            leadtime_step = leadtimes.get("step")
+            leadtime_stop = leadtimes.get("stop")
+
+            if leadtime_step is not None:
+                # Convert '6:00:00' to '6h'.
+                if isinstance(leadtime_step, str) and ":" in leadtime_step:
+                    hours = int(leadtime_step.split(":")[0])
+                    task_config["freq"] = f"{hours}h"
+                else:
+                    task_config["freq"] = leadtime_step
+
+            if leadtime_stop is not None:
+                # Convert the maximum lead time to an integer.
+                task_config["lead_time"] = int(leadtime_stop)
 
         logger.info(
             "Task '%s': generated %d top-level parameters.",
