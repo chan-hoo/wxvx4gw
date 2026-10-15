@@ -1,7 +1,7 @@
 app:
   account: epic
   exp_case_name: test_eagle
-  platform: ursa
+  platform: hercules
 nco_vars:
   envir: test
   model_ver: v0.0.1

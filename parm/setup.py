@@ -34,6 +34,18 @@ from datetime import datetime
 
 import yaml
 
+
+# ---------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s: %(message)s",
+)
+
+logger = logging.getLogger(__name__)
+
 # ---------------------------------------------------------------------
 # datetime format
 # ---------------------------------------------------------------------
@@ -54,18 +66,6 @@ def format_datetime(value):
     )
 
 # ---------------------------------------------------------------------
-# Logging
-# ---------------------------------------------------------------------
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(levelname)s: %(message)s",
-)
-
-logger = logging.getLogger(__name__)
-
-
-# ---------------------------------------------------------------------
 # Configuration generator
 # ---------------------------------------------------------------------
 
@@ -75,7 +75,7 @@ class ConfigGenerator:
     # -----------------------------------------------------------------
     # Parameter-specific default values when AUTO
     # -----------------------------------------------------------------
-
+    
     AUTO_RULES = {
         "nco_vars.OPS_PATH": "{repo_dir}/PTMP",
         "vx_common.meta.post_files": "{COMINOUT}/vx/post_files",
@@ -115,13 +115,10 @@ class ConfigGenerator:
     # Initialize
     # -----------------------------------------------------------------
 
-    def __init__(
-        self,
-        config_file: str | Path = "config_base.yaml",
-    ) -> None:
+    def __init__(self, config_file, *args, **kwargs):
         """
         Initialize the configuration generator.
-
+    
         Parameters
         ----------
         config_file : str or pathlib.Path
@@ -129,24 +126,26 @@ class ConfigGenerator:
             relative to the directory containing this script.
         """
         self.script_dir = Path(__file__).resolve().parent
-
-        config_path = Path(config_file).expanduser()
-
-        if not config_path.is_absolute():
-            config_path = self.script_dir / config_path
-
-        self.config_file = config_path.resolve()
-
+    
+        config_file = Path(config_file).expanduser()
+    
+        if not config_file.is_absolute():
+            config_file = self.script_dir / config_file
+    
+        self.config_file = config_file.resolve()
+    
         # The wxvx4gw repository root is the parent of parm/.
         self.repo_dir = self.script_dir.parent
-
+    
         # Experiment cases directory under the parm directory.
         self.exp_cases_dir = self.script_dir / "exp_cases"
-        
+    
         # Default OPS directory under the repository root.
         self.default_ops_path = self.repo_dir / "PTMP"
-
+    
         self.config: dict[str, Any] = {}
+        self.platform_config: dict[str, Any] = {}
+        self.platform_params: dict[str, Any] = {}
 
     # -----------------------------------------------------------------
     # Read the base configuration
@@ -189,6 +188,45 @@ class ConfigGenerator:
         )
 
         return self.config
+
+    # -----------------------------------------------------------------
+    # Read plotform-specific configuration
+    # -----------------------------------------------------------------
+
+    def load_config_platform(self):
+        """Load platform-specific parameters from config_platform.yaml."""
+    
+        platform_config_path = self.script_dir / "config_platform.yaml"
+    
+        if not platform_config_path.is_file():
+            raise FileNotFoundError(
+                f"Platform configuration not found: {platform_config_path}"
+            )
+    
+        with platform_config_path.open("r", encoding="utf-8") as f:
+            self.platform_config = yaml.safe_load(f) or {}
+    
+        platform = self.config.get("app", {}).get("platform")
+    
+        if not isinstance(platform, str) or not platform.strip():
+            raise ValueError(
+                "Missing or invalid 'platform' in the 'app' group "
+                "of config_base.yaml."
+            )
+    
+        platform = platform.strip().lower()
+        platforms = self.platform_config.get("platforms", {})
+    
+        if platform not in platforms:
+            supported = ", ".join(sorted(platforms))
+            raise ValueError(
+                f"Unsupported platform '{platform}'. "
+                f"Supported platforms: {supported}"
+            )
+    
+        self.platform_params = platforms[platform]
+
+        return self.platform_params
 
     # -----------------------------------------------------------------
     # Resolve configuration parms when set to AUTO
@@ -433,14 +471,11 @@ class ConfigGenerator:
         """
         Build a flattened configuration for a task.
     
-        A configuration group can be:
-          1. A dictionary containing parameter values.
-          2. A list of other configuration group names.
-    
-        List-based groups are expanded recursively.
-    
-        Nested dictionaries are merged recursively, and values from
-        later groups take precedence when parameter names conflict.
+        Special handling:
+          - common: add platform-specific parameters.
+          - prewxvx: generate frequency, lead time, dates, and variables.
+          - plot_vx_grid / plot_vx_obs: transform common configuration
+            into plotting parameters.
         """
         if not isinstance(group_names, list):
             raise ValueError(
@@ -482,11 +517,11 @@ class ConfigGenerator:
                 group_config = self.config[group_name]
     
                 if isinstance(group_config, list):
-                    # Expand reusable groups such as config_common.
                     if group_name in visited:
                         raise ValueError(
-                            f"Circular configuration reference detected "
-                            f"for group '{group_name}' in task '{task_name}'."
+                            "Circular configuration reference detected "
+                            f"for group '{group_name}' in task "
+                            f"'{task_name}'."
                         )
     
                     merge_groups(
@@ -496,7 +531,6 @@ class ConfigGenerator:
                     )
     
                 elif isinstance(group_config, dict):
-                    # Merge actual parameter values.
                     self.deep_merge(target, group_config)
     
                 else:
@@ -504,92 +538,49 @@ class ConfigGenerator:
                         f"Configuration group '{group_name}' must be "
                         "a dictionary or a list of group names."
                     )
-
-        # Handle prewxvx separately: do not merge the common group as-is.
-        if task_name == "prewxvx":
-            group_names = [
-                group for group in group_names
-                if group != "common"
-            ]
-
-        # Tasks that require transformed values from the common group.
+    
+        # -------------------------------------------------------------
+        # Exclude common for tasks that require transformed parameters.
+        # -------------------------------------------------------------
         special_tasks = {
             "prewxvx",
             "plot_vx_grid",
             "plot_vx_obs",
         }
-
+    
         if task_name in special_tasks:
             group_names = [
                 group for group in group_names
                 if group != "common"
             ]
-
+    
+        # Merge the remaining task configuration groups.
         merge_groups(group_names, task_config)
-
+    
+        # -------------------------------------------------------------
+        # Add platform-specific parameters to config_common.yaml.
+        # -------------------------------------------------------------
+        if task_name == "common":
+            task_config.update(self.platform_params)
+    
+        # -------------------------------------------------------------
+        # Generate transformed parameters for special tasks.
+        # -------------------------------------------------------------
         if task_name in special_tasks:
             common = self.config.get("common", {})
-
+    
             cycles = common.get("cycles", {})
             leadtimes = common.get("leadtimes", {})
             variables = common.get("variables", {})
-
-            # Handle prewxvx.
+    
+            # =========================================================
+            # prewxvx
+            # =========================================================
             if task_name == "prewxvx":
     
                 # Forecast frequency: '6:00:00' -> '6h'.
                 leadtime_step = leadtimes.get("step")
-                if leadtime_step is not None:
-                    if isinstance(leadtime_step, str) and ":" in leadtime_step:
-                        hours = int(leadtime_step.split(":")[0])
-                        task_config["freq"] = f"{hours}h"
-                    else:
-                        task_config["freq"] = leadtime_step
     
-                # Maximum forecast lead time: '24' -> 24.
-                leadtime_stop = leadtimes.get("stop")
-                if leadtime_stop is not None:
-                    task_config["lead_time"] = int(leadtime_stop)
-    
-                # Cycle start and end dates.
-                start = cycles.get("start")
-                stop = cycles.get("stop")
-
-                if start is not None:
-                    task_config["start_date"] = format_datetime(start)
-                
-                if stop is not None:
-                    task_config["end_date"] = format_datetime(stop)
-   
-                # Variable names, preserving their configuration order.
-                task_config["vars_of_interest"] = list(variables.keys())
-
-                pass
-
-            # Handle plotting tasks.
-            elif task_name in {"plot_vx_grid", "plot_vx_obs"}:
-
-                # Start and end dates: preserve the T separator.
-                start = cycles.get("start")
-                stop = cycles.get("stop")
-
-                if start is not None:
-                    task_config["start_date"] = (
-                        start.isoformat(timespec="seconds")
-                        if hasattr(start, "isoformat")
-                        else str(start)
-                    )
-
-                if stop is not None:
-                    task_config["end_date"] = (
-                        stop.isoformat(timespec="seconds")
-                        if hasattr(stop, "isoformat")
-                        else str(stop)
-                    )
-
-                # Frequency: convert '6:00:00' to '6h'.
-                leadtime_step = leadtimes.get("step")
-
                 if leadtime_step is not None:
                     if (
                         isinstance(leadtime_step, str)
@@ -599,30 +590,88 @@ class ConfigGenerator:
                         task_config["freq"] = f"{hours}h"
                     else:
                         task_config["freq"] = leadtime_step
-
-                # Convert leadtimes to integer hours.
+    
+                # Maximum forecast lead time: '24' -> 24.
+                leadtime_stop = leadtimes.get("stop")
+    
+                if leadtime_stop is not None:
+                    task_config["lead_time"] = int(leadtime_stop)
+    
+                # Dates use a space separator.
+                start = cycles.get("start")
+                stop = cycles.get("stop")
+    
+                if start is not None:
+                    task_config["start_date"] = format_datetime(start)
+    
+                if stop is not None:
+                    task_config["end_date"] = format_datetime(stop)
+    
+                # Preserve the order of variables in config_base.yaml.
+                task_config["vars_of_interest"] = list(
+                    variables.keys()
+                )
+    
+            # =========================================================
+            # plot_vx_grid and plot_vx_obs
+            # =========================================================
+            elif task_name in {"plot_vx_grid", "plot_vx_obs"}:
+    
+                # Dates retain the T separator.
+                start = cycles.get("start")
+                stop = cycles.get("stop")
+    
+                if start is not None:
+                    task_config["start_date"] = (
+                        start.isoformat(timespec="seconds")
+                        if isinstance(start, datetime)
+                        else str(start)
+                    )
+    
+                if stop is not None:
+                    task_config["end_date"] = (
+                        stop.isoformat(timespec="seconds")
+                        if isinstance(stop, datetime)
+                        else str(stop)
+                    )
+    
+                # Forecast frequency: '6:00:00' -> '6h'.
+                leadtime_step = leadtimes.get("step")
+    
+                if leadtime_step is not None:
+                    if (
+                        isinstance(leadtime_step, str)
+                        and ":" in leadtime_step
+                    ):
+                        hours = int(leadtime_step.split(":")[0])
+                        task_config["freq"] = f"{hours}h"
+                    else:
+                        task_config["freq"] = leadtime_step
+    
+                # Convert lead times to integer hours.
                 def time_to_hours(value):
                     if isinstance(value, str) and ":" in value:
                         hours, minutes, seconds = map(
                             int, value.split(":")
                         )
                         return hours + minutes / 60 + seconds / 3600
+    
                     return int(value)
-
+    
                 task_config["leadtimes"] = {
                     "start": time_to_hours(leadtimes["start"]),
                     "end": time_to_hours(leadtimes["stop"]),
                     "step": time_to_hours(leadtimes["step"]),
                 }
-
-                # Build variable prefixes from the variable definitions.
+    
+                # Build variable prefixes from variable definitions.
                 prefixes = []
-
+    
                 for variable in variables.values():
                     name = variable["name"]
                     level_type = variable["level_type"]
                     levels = variable.get("levels", [])
-
+    
                     if level_type == "surface":
                         prefixes.append(f"{name}_{level_type}")
                     else:
@@ -630,15 +679,15 @@ class ConfigGenerator:
                             prefixes.append(
                                 f"{name}_{level_type}_{int(level):04d}"
                             )
-
+    
                 task_config["variable_prefixes"] = sorted(prefixes)
-
+    
         logger.info(
             "Task '%s': generated %d top-level parameters.",
             task_name,
             len(task_config),
         )
-
+    
         return task_config
 
     # -----------------------------------------------------------------
@@ -676,6 +725,7 @@ class ConfigGenerator:
         """Generate reusable configuration groups and task configurations."""
     
         self.load_config()
+        self.load_config_platform()
 
         # Resolve all AUTO parameters before generating YAML files.
         self.resolve_auto_parameters()

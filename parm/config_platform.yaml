@@ -1,0 +1,40 @@
+platforms:
+  derecho:
+    max_cores_per_node: 128
+    native: null
+    partition_queue: main
+    qos: null
+    run_cmd: aprun
+    sched: pbspro
+
+  gaea-c6:
+    max_cores_per_node: 192
+    native: "-M c6"
+    partition_queue: batch
+    qos: normal
+    run_cmd: srun
+    sched: slurm
+
+  hercules:
+    max_cores_per_node: 80
+    native: null
+    partition_queue: hercules
+    qos: batch
+    run_cmd: srun
+    sched: slurm
+
+  orion:
+    max_cores_per_node: 40
+    native: null
+    partition_queue: orion
+    qos: batch
+    run_cmd: srun
+    sched: slurm
+
+  ursa:
+    max_cores_per_node: 192
+    native: "--exclusive"
+    partition_queue: u1-compute
+    qos: batch
+    run_cmd: "srun --label --distribution=block:block"
+    sched: slurm
