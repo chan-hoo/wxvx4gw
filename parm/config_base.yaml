@@ -13,37 +13,31 @@ config_common:
   - nco_vars
 tasks:
   prewxvx:
+    - common
     - prewxvx
   vx_grid2grid:
+    - common
     - vx_common
     - vx_grid2grid
   vx_grid2obs:
+    - common
     - vx_common
     - vx_grid2obs
-vx_common:
+  plot_vx_grid:
+    - common
+    - plot_vx_grid
+  plot_vx_obs:
+    - common
+    - plot_vx_obs
+common:
   cycles:
     start: 2022-02-03T12:00:00
     step: 0
     stop: 2022-02-03T12:00:00
-  forecast:
-    coords:
-      latitude: latitude
-      level: level
-      longitude: longitude
-      time:
-        inittime: forecast_reference_time
-        validtime: time
-    name: nested_global
-    projection:
-      proj: latlon
-    path: AUTO
   leadtimes:
     start: '6:00:00'
     step: '6:00:00'
     stop: '24'
-  meta:
-    max_leadtime: 24
-    post_files: AUTO
   variables:
     t2m:
       level_type: heightAboveGround
@@ -83,6 +77,22 @@ vx_common:
       levels:
       - 10
       name: 10v
+vx_common:
+  forecast:
+    coords:
+      latitude: latitude
+      level: level
+      longitude: longitude
+      time:
+        inittime: forecast_reference_time
+        validtime: time
+    name: nested_global
+    projection:
+      proj: latlon
+    path: AUTO
+  meta:
+    max_leadtime: 24
+    post_files: AUTO
 vx_grid2grid:
   meta:
     workdir: AUTO
@@ -143,4 +153,10 @@ prewxvx:
     regridder_kwargs:
       method: conservative_normed
     target_grid_path: AUTO
+plot_vx_grid:
+  work_path: AUTO
+  stat_prefix: grid_stat
+plot_vx_obs:
+  work_path: AUTO
+  stat_prefix: point_stat
 
