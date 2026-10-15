@@ -490,15 +490,36 @@ class ConfigGenerator:
                         f"Configuration group '{group_name}' must be "
                         "a dictionary or a list of group names."
                     )
-    
+
         merge_groups(group_names, task_config)
-    
+
+        # Add parameters required by prewxvx.
+        if task_name == "prewxvx":
+            vx_common = self.config.get("vx_common", {})
+            cycles = vx_common.get("cycles", {})
+            variables = vx_common.get("variables", {})
+
+            start = cycles.get("start")
+            stop = cycles.get("stop")
+
+            if start is not None:
+                task_config["start_date"] = start.strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+
+            if stop is not None:
+                task_config["end_date"] = stop.strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+
+            task_config["vars_of_interest"] = list(variables.keys())
+
         logger.info(
             "Task '%s': generated %d top-level parameters.",
             task_name,
             len(task_config),
         )
-    
+
         return task_config
 
     # -----------------------------------------------------------------
