@@ -1,7 +1,6 @@
 #!/bin/bash -l
-{%- if WORKFLOW_MANAGER != "rocoto" %}
-  {%- if SCHED == "slurm" %}
-#SBATCH --account={{ ACCOUNT }}
+{%- if sched == "slurm" %}
+#SBATCH --account={{ account }}
 #SBATCH --job-name={{ task_name }}
 #SBATCH --output={{ output_name }}
 #SBATCH --partition={{ partition_queue }}
@@ -9,24 +8,23 @@
 #SBATCH --time={{ walltime }}
 #SBATCH --nodes={{ nnodes }}
 #SBATCH --ntasks-per-node={{ nprocs_per_node }}
-    {%- if memory_flag %}
+  {%- if memory_flag %}
 #SBATCH --mem={{ memory_per_node }}
-    {%- endif %}
-    {%- if NATIVE is not none %}
-#SBATCH {{ NATIVE }}
-    {%- endif %}
-  {%- elif SCHED == "pbspro" %}
+  {%- endif %}
+  {%- if native is not none %}
+#SBATCH {{ native }}
+  {%- endif %}
+{%- elif sched == "pbspro" %}
 #PBS -S /bin/bash
-#PBS -A {{ ACCOUNT }}
+#PBS -A {{ account }}
 #PBS -N {{ task_name }}
 #PBS -o {{ output_name }}
 #PBS -j oe
 #PBS -q {{ partition_queue }}
 #PBS -l walltime={{ walltime }}
 #PBS -l select={{ nnodes }}:ncpus={{ nprocs_per_node }}:mpiprocs={{ nprocs_per_node }}
-    {%- if NATIVE is not none %}
-#PBS {{ NATIVE }}
-    {%- endif %}
+  {%- if native is not none %}
+#PBS {{ native }}
   {%- endif %}
 {%- endif %}
 
@@ -38,19 +36,18 @@ set -xue
 source {{ exp_case_path }}/task_env/{{ task_name }}.env
 
 ## Load module file for task
-{%- if MACHINE == "gaeac6" %}
+{%- if platform == "gaea-c6" %}
 module reset
 {%- else %}
 module purge
 {%- endif %}
-source {{ HOMEufsda }}/versions/run.ver_{{ MACHINE }}
-module use {{ HOMEufsda }}/modulefiles/tasks/{{ MACHINE }}
-module load task.{{ task_name }}
+#source {{ HOMEwxvx }}/versions/run.ver_{{ platform }}
+module load nco
 module list
 
 ## Environment variables
 ### PDY/cyc
-{%- if WORKFLOW_MANAGER == "ecflow" %}
+{%- if workflow_manager == "ecflow" %}
 %include <head.h>
 export PDY=%ECF_DATE%
 export cyc=%CYC%
@@ -59,24 +56,21 @@ export PDY="${PDY:-{{ pdy_cdate }}}"
 export cyc="${cyc:-{{ cyc_cdate }}}"
 {%- endif %}
 ### job/jobid
-{%- if SCHED == "slurm" %}
+{%- if sched == "slurm" %}
 export job="{{ task_name }}.${PDY}${cyc}"
 export jobid="${job}.${SLURM_JOB_ID}"
-{%- elif SCHED == "pbspro" %}
+{%- elif sched == "pbspro" %}
 export job="{{ task_name }}.${PDY}${cyc}"
 export jobid="${job}.${PBS_JOBID}"
 {%- endif %}
 
 ## Export environment variable: job-card level
-source {{ HOMEufsda }}/parm/jcard_env_setup.sh
+source {{ HOMEwxvx }}/parm/jcard_env_setup.sh
 
 #################################
-## Replacement of J-job script
+## Run J-job script
 #################################
-source {{ HOMEufsda }}/parm/jjob_env_setup.sh
-
-### Run task ex-script
-{{ HOMEufsda }}/scripts/exufsda_{{ task_name }}.sh
+{{ HOMEwxvx }}/jobs/JWXVX_{{ task_name_upper }}.sh
 
 if [ -e "$pgmout" ]; then
   cat $pgmout
@@ -86,6 +80,6 @@ if [ "${KEEPDATA}" = "NO" ]; then
 fi
 date
 
-{%- if WORKFLOW_MANAGER == "ecflow" %}
+{%- if workflow_manager == "ecflow" %}
 %include <tail.h>
 {%- endif %}

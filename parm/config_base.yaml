@@ -2,6 +2,7 @@ app:
   account: epic
   exp_case_name: test_eagle
   platform: hercules
+  workflow_manager: None
 nco_vars:
   envir: test
   model_ver: v0.0.1
