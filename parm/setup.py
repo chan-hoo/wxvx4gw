@@ -788,17 +788,32 @@ class ConfigGenerator:
     
         with platform_file.open("r", encoding="utf-8") as stream:
             platform_config = yaml.safe_load(stream)
-    
+
+        # Get app configuration from config_base.yaml
         app_config = self.config.get("app", {})
         platform_name = app_config.get("platform")
-    
-        platforms = platform_config.get("platforms", {})
-    
+
+        # Get NCO variables from config_base.yaml.
+        nco_vars = self.config.get("nco_vars", {})
+        envir = nco_vars.get("envir")        
+        if not envir:
+            raise ValueError("Missing required nco_vars.envir.")
+        keepdata = nco_vars.get("KEEPDATA")
+        if not keepdata:
+            raise ValueError("Missing required nco_vars.KEEPDATA.")
+        model_ver = nco_vars.get("model_ver")
+        if not model_ver:
+            raise ValueError("Missing required nco_vars.model_ver.")
+        ops_path = nco_vars.get("OPS_PATH")
+        if not ops_path:
+            raise ValueError("Missing required nco_vars.OPS_PATH.")        
+
+
+        platforms = platform_config.get("platforms", {}) 
         if platform_name not in platforms:
             raise ValueError(
                 f"Unknown platform: {platform_name!r}"
-            )
-    
+            ) 
         platform = platforms[platform_name]
     
         # Determine the cycle date.
@@ -837,8 +852,8 @@ class ConfigGenerator:
                 )
     
             nnodes = (nprocs + max_cores - 1) // max_cores
-            nprocs_per_node = min(nprocs, max_cores)
-    
+            nprocs_per_node = (nprocs + nnodes -1) // nnodes
+
             context = {
                 "account": app_config.get("account"),
                 "task_name": task_name,
@@ -858,6 +873,10 @@ class ConfigGenerator:
                 "HOMEwxvx": str(self.repo_dir),
                 "pdy_cdate": pdy_cdate,
                 "cyc_cdate": cyc_cdate,
+                "envir": envir,
+                "KEEPDATA": keepdata,
+                "model_ver": model_ver,
+                "OPS_PATH": ops_path,
             }
     
             # Render the template.

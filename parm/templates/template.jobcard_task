@@ -35,9 +35,6 @@ set -xue
 # ---------------------------------------------------------------------
 # Home directory
 export HOMEwxvx={{ HOMEwxvx }}
-# COM root directory
-export OPSROOT="${OPSROOT:-{{ OPS_PATH }}/${envir}}"
-export COMROOT="${COMROOT:-${OPSROOT}/com}"
 # PDY/cyc
 {%- if workflow_manager == "ecflow" %}
 %include <head.h>
@@ -55,6 +52,14 @@ export jobid="${job}.${SLURM_JOB_ID}"
 export job="{{ task_name }}.${PDY}${cyc}"
 export jobid="${job}.${PBS_JOBID}"
 {%- endif %}
+# NCO variables
+export envir="${envir:-{{ envir }}}"
+export model_ver="${model_ver:-{{ model_ver }}}"
+export KEEPDATA="${KEEPDATA:-{{ KEEPDATA }}}"
+export OPSROOT="${OPSROOT:-{{ OPS_PATH }}/${envir}}"
+export COMROOT="${COMROOT:-${OPSROOT}/com}"
+export DATAROOT="${DATAROOT:-${OPSROOT}/tmp}"
+export DCOMROOT="${DCOMROOT:-${OPSROOT}/dcom}"
 
 # ---------------------------------------------------------------------
 # Load module file for task
