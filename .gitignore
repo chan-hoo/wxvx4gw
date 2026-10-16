@@ -1,6 +1,6 @@
 *.swp
 parm/exp_cases/
+parm/PTMP/
 sorc/conda/
 sorc/condarc
 sorc/activate_wxvx.sh
-PTMP/

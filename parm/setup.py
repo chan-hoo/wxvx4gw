@@ -12,13 +12,6 @@ Expected input structure:
     ├── config_platform.yaml
     └── setup.py
 
-Expected output structure:
-
-    parm/exp_cases/<exp_case_name>/configs/
-        ├── config_common.yaml
-        ├── config_<task1>.yaml
-        └── config_<task2>.yaml
-
 Usage:
     python setup.py
     python setup.py --config config_base.yaml
@@ -79,7 +72,7 @@ class ConfigGenerator:
     # -----------------------------------------------------------------
     
     AUTO_RULES = {
-        "nco_vars.OPS_PATH": "{repo_dir}/PTMP",
+        "nco_vars.OPS_PATH": "{script_dir}/PTMP",
         "vx_common.meta.post_files": "{COMINOUT}/vx/post_files",
         "vx_common.forecast.path":(
             '{{ meta.post_files }}/nested-global.{{ yyyymmdd[:4] }}-{{ yyyymmdd[4:6] }}-'
@@ -239,6 +232,7 @@ class ConfigGenerator:
     
         context = {
             "repo_dir": str(self.repo_dir),
+            "script_dir": str(self.script_dir),
         }
     
         # Collect parameters from app and nco_vars.
@@ -808,7 +802,6 @@ class ConfigGenerator:
         if not ops_path:
             raise ValueError("Missing required nco_vars.OPS_PATH.")        
 
-
         platforms = platform_config.get("platforms", {}) 
         if platform_name not in platforms:
             raise ValueError(
@@ -830,7 +823,13 @@ class ConfigGenerator:
     
         pdy_cdate = cycle_date.strftime("%Y%m%d")
         cyc_cdate = cycle_date.strftime("%H")
-    
+
+        # Create symlinks to NCO directories
+        exp_case_name = app_config["exp_case_name"]
+        exp_case_path = self.exp_cases_dir / exp_case_name
+        exp_case_path.mkdir(parents=True, exist_ok=True)
+        self.create_symlinks_dirs(exp_case_path, nco_vars)
+
         # Generate a job card for each task.
         generated_files = []
     
@@ -899,6 +898,50 @@ class ConfigGenerator:
             generated_files.append(output_file)
     
         return generated_files
+
+    # -----------------------------------------------------------------
+    # Create symlinks to NCO directories
+    # -----------------------------------------------------------------
+
+    def create_symlinks_dirs(self, exp_case_path, nco_vars):
+        """Create symlinks to log, tmp, and com directories."""
+    
+        ops_path = Path(nco_vars["OPS_PATH"])
+        envir = nco_vars["envir"]
+        net = nco_vars["NET"]
+        model_ver = nco_vars["model_ver"]
+    
+        symlink_dirs = {
+            "log_dir": ops_path / envir / "com" / "output" / "logs",
+            "tmp_dir": ops_path / envir / "tmp",
+            "com_dir": ops_path / envir / "com" / net / model_ver,
+        }
+ 
+        for link_name, source_dir in symlink_dirs.items():
+            link_path = exp_case_path / link_name
+
+            # Create the source directory if it doesn't exist.
+            source_dir.mkdir(parents=True, exist_ok=True)
+
+            # Handle an existing symlink.
+            if link_path.is_symlink():
+                if link_path.resolve() == source_dir.resolve():
+                    logger.debug("Symlink already exists: %s", link_path)
+                    continue
+    
+                raise FileExistsError(
+                    f"Symlink already exists and points elsewhere: {link_path}"
+                )
+    
+            if link_path.exists():
+                raise FileExistsError(
+                    f"Cannot create symlink; destination already exists: {link_path}"
+                )
+
+            # Create the symlinks
+            link_path.symlink_to(source_dir, target_is_directory=True)
+    
+            logger.info("Created symlink: %s -> %s", link_path, source_dir)
 
     # -----------------------------------------------------------------
     # Generate configurations and job cards for all tasks
