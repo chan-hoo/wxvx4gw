@@ -70,8 +70,12 @@ module reset
 module purge
 {%- endif %}
 source ${HOMEwxvx}/versions/run.ver_{{ platform }}
-module load prod_util
+module use ${HOMEwxvx}/modulefiles
+module load modules_{{ platform }}.intel
 module list
+
+# Activate conda environment
+source ${HOMEwxvx}/sorc/activate_wxvx.sh
 
 # ---------------------------------------------------------------------
 # Run J-job script
