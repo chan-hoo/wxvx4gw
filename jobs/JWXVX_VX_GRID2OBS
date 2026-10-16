@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+
+date
+export PS4='+ $SECONDS + '
+
+# ---------------------------------------------------------------------
+# Set the NCO standard environment variables (Table 1, pp.4)
+# ---------------------------------------------------------------------
+export USHwxvx="${HOMEwxvx}/ush"
+export EXECwxvx="${HOMEwxvx}/exec"
+export PARMwxvx="${HOMEwxvx}/parm"
+export FIXwxvx="${HOMEwxvx}/fix"
+export SCRIPTSwxvx="${HOMEwxvx}/scripts"
+
+# ---------------------------------------------------------------------
+# Create a temp working directory (DATA) and cd into it.
+# ---------------------------------------------------------------------
+export DATA="${DATA:-${DATAROOT}/${jobid}}"
+mkdir -p $DATA
+cd $DATA
+
+# ---------------------------------------------------------------------
+# Define NCO environment variables and set COM type definitions.
+# ---------------------------------------------------------------------
+export NET="${NET:-wxvx}"
+export RUN="${RUN:-wxvx}"
+
+# Run setpdy to initialize PDYm and PDYp variables
+export cycle="${cycle:-t${cyc}z}"
+setpdy.sh
+. ./PDY
+
+# ---------------------------------------------------------------------
+# COM directories (input/output)
+# ---------------------------------------------------------------------
+export COMIN="${COMIN:-${COMROOT}/${NET}/${model_ver}/${RUN}.${PDY}}"
+export COMOUT="${COMOUT:-${COMROOT}/${NET}/${model_ver}/${RUN}.${PDY}}"
+mkdir -p ${COMIN}
+mkdir -p ${COMOUT}
+
+# ---------------------------------------------------------------------
+# Log directory
+# ---------------------------------------------------------------------
+export LOGDIR="${LOGDIR:-${COMROOT}/output/logs}"
+mkdir -p ${LOGDIR}
+
+# ---------------------------------------------------------------------
+# Task output file
+# ---------------------------------------------------------------------
+export pgmout="${DATA}/OUTPUT.$$"
+
+# ---------------------------------------------------------------------
+# Call ex-script
+# ---------------------------------------------------------------------
+${SCRIPTSwxvx}/exwxvx_vx_grid2obs.sh
+export err=$?; err_chk
+
+# ---------------------------------------------------------------------
+# Print output
+# ---------------------------------------------------------------------
+if [ -e "$pgmout" ]; then
+  cat $pgmout
+fi
+
+# ---------------------------------------------------------------------
+# Remove temporary working directory
+# ---------------------------------------------------------------------
+if [ "${KEEPDATA}" = "NO" ]; then
+  rm -rf ${DATA}
+fi
+
+date

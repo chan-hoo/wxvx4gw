@@ -1,7 +1,7 @@
 app:
   account: epic
   exp_case_name: test_eagle
-  platform: hercules
+  platform: ursa
   workflow_manager: None
 nco_vars:
   envir: test
