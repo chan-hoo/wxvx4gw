@@ -35,6 +35,9 @@ set -xue
 # ---------------------------------------------------------------------
 # Home directory
 export HOMEwxvx={{ HOMEwxvx }}
+# COM root directory
+export OPSROOT="${OPSROOT:-{{ OPS_PATH }}/${envir}}"
+export COMROOT="${COMROOT:-${OPSROOT}/com}"
 # PDY/cyc
 {%- if workflow_manager == "ecflow" %}
 %include <head.h>
