@@ -799,9 +799,13 @@ class ConfigGenerator:
         model_ver = nco_vars.get("model_ver")
         if not model_ver:
             raise ValueError("Missing required nco_vars.model_ver.")
+        net = nco_vars.get("NET")
+        if not net:
+            raise ValueError("Missing required nco_vars.NET.")
         ops_path = nco_vars.get("OPS_PATH")
         if not ops_path:
-            raise ValueError("Missing required nco_vars.OPS_PATH.")        
+            raise ValueError("Missing required nco_vars.OPS_PATH.")
+        ops_path = Path(ops_path)
 
         platforms = platform_config.get("platforms", {}) 
         if platform_name not in platforms:
@@ -826,14 +830,22 @@ class ConfigGenerator:
         cyc_cdate = cycle_date.strftime("%H")
 
         # Create symlinks to NCO directories
+        log_dir = ops_path / envir / "com" / "output" / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        tmp_dir = ops_path / envir / "tmp"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        com_dir = ops_path / envir / "com" / net / model_ver
+        com_dir.mkdir(parents=True, exist_ok=True)
+
         exp_case_name = app_config["exp_case_name"]
         exp_case_path = self.exp_cases_dir / exp_case_name
         exp_case_path.mkdir(parents=True, exist_ok=True)
-        self.create_symlinks_dirs(exp_case_path, nco_vars)
-
-        # Prepare the log directory.
-        log_dir_path = Path(ops_path) / envir / "com" / "output" / "logs"
-        log_dir_path.mkdir(parents=True, exist_ok=True)
+        self.create_symlinks_dirs(
+            exp_case_path,
+            log_dir=log_dir,
+            tmp_dir=tmp_dir,
+            com_dir=com_dir,
+        )
 
         # Generate a job card for each task.
         generated_files = []
@@ -862,7 +874,7 @@ class ConfigGenerator:
                 output_fn = f"{itask}_%ECF_DATE%%CYC%_%ECF_TRYNO%.log"
             else:
                 output_fn = f"{task_name}.%j.log"
-            output_name = str(log_dir_path / output_fn)
+            output_name = str(log_dir / output_fn)
 
             context = {
                 "account": app_config.get("account"),
@@ -903,9 +915,7 @@ class ConfigGenerator:
     
             # Set executable permissions.
             output_file.chmod(0o755)
-    
             logger.info("Generated job card: %s", output_file)
-    
             generated_files.append(output_file)
     
         return generated_files
@@ -914,18 +924,19 @@ class ConfigGenerator:
     # Create symlinks to NCO directories
     # -----------------------------------------------------------------
 
-    def create_symlinks_dirs(self, exp_case_path, nco_vars):
+    def create_symlinks_dirs(
+        self,
+        exp_case_path: Path,
+        log_dir: Path,
+        tmp_dir: Path,
+        com_dir: Path,
+    ) -> None:
         """Create symlinks to log, tmp, and com directories."""
-    
-        ops_path = Path(nco_vars["OPS_PATH"])
-        envir = nco_vars["envir"]
-        net = nco_vars["NET"]
-        model_ver = nco_vars["model_ver"]
-    
+        
         symlink_dirs = {
-            "log_dir": ops_path / envir / "com" / "output" / "logs",
-            "tmp_dir": ops_path / envir / "tmp",
-            "com_dir": ops_path / envir / "com" / net / model_ver,
+            "log_dir": log_dir,
+            "tmp_dir": tmp_dir,
+            "com_dir": com_dir,
         }
  
         for link_name, source_dir in symlink_dirs.items():
