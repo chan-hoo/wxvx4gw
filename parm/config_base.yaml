@@ -3,6 +3,7 @@ app:
   exp_case_name: test_eagle
   platform: ursa
   workflow_manager: None
+  workflow_type: eagle
 nco_vars:
   envir: test
   KEEPDATA: 'YES'

@@ -786,6 +786,7 @@ class ConfigGenerator:
         # Get app configuration from config_base.yaml
         app_config = self.config.get("app", {})
         platform_name = app_config.get("platform")
+        workflow_manager = app_config.get("workflow_manager")
 
         # Get NCO variables from config_base.yaml.
         nco_vars = self.config.get("nco_vars", {})
@@ -830,6 +831,10 @@ class ConfigGenerator:
         exp_case_path.mkdir(parents=True, exist_ok=True)
         self.create_symlinks_dirs(exp_case_path, nco_vars)
 
+        # Prepare the log directory.
+        log_dir_path = Path(ops_path) / envir / "com" / "output" / "logs"
+        log_dir_path.mkdir(parents=True, exist_ok=True)
+
         # Generate a job card for each task.
         generated_files = []
     
@@ -853,11 +858,17 @@ class ConfigGenerator:
             nnodes = (nprocs + max_cores - 1) // max_cores
             nprocs_per_node = (nprocs + nnodes -1) // nnodes
 
+            if workflow_manager == "ecflow":
+                output_fn = f"{itask}_%ECF_DATE%%CYC%_%ECF_TRYNO%.log"
+            else:
+                output_fn = f"{task_name}.%j.log"
+            output_name = str(log_dir_path / output_fn)
+
             context = {
                 "account": app_config.get("account"),
                 "task_name": task_name,
                 "task_name_upper": task_name.upper(),
-                "output_name": f"{task_name}.%j.out",
+                "output_name": output_name,
                 "partition_queue": platform["partition_queue"],
                 "qos": platform.get("qos"),
                 "walltime": hpc.get("walltime", "00:30:00"),
