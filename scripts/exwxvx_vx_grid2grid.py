@@ -8,7 +8,7 @@ import yaml
 
 # Read configuration YAML file
 path_to_config = Path(os.environ["exp_config_dir"])
-config_file = path_to_config / "config.yaml"
+config_file = path_to_config / "config_common.yaml"
 with config_file.open("r") as f:
     config = yaml.safe_load(f)
 
@@ -33,7 +33,7 @@ if wxvx_executable is None:
 
 command = [
     wxvx_executable,
-    "-c", "wxvx-grid2grid-global.yaml",
+    "-c", path_to_config / "wxvx-grid2grid-global.yaml",
     "-t", "plots",
     "-f",
 ]
