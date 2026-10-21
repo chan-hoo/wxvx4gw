@@ -117,45 +117,40 @@ vx_common:
     name: nested_global
     projection:
       proj: latlon
-    path: AUTO
+    path: '{{ meta.post_files }}/nested-global.{{ yyyymmdd[:4] }}-{{ yyyymmdd[4:6] }}-{{ yyyymmdd[6:8] }}T{{ hh }}.{{ "%02d" % meta.max_leadtime }}h.nc'
   meta:
+    workdir: ./
+    grids: ./grids
     max_leadtime: 24
-    post_files: AUTO
+    post_files: ./
+  paths:
+    grids:
+      forecast: ./grids/forecast
+    run: ./
 vx_grid2grid:
-  meta:
-    workdir: AUTO
-    grids: AUTO
   truth:
     name: GFS
     type: grid
-    url: AUTO
+    url: https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.{{ yyyymmdd }}/{{ hh }}/atmos/gfs.t{{ hh }}z.pgrb2.0p25.f{{ "%03d" % fh }}
   ncdiffs: true
   regrid:
     method: NEAREST
     to: forecast
   paths:
     grids:
-      forecast: AUTO
-      truth: AUTO
-    run: AUTO
+      truth: ./grids/truth
 vx_grid2obs:
-  meta:
-    workdir: AUTO
-    grids: AUTO
   truth:
     name: PREPBUFR
     type: point
-    url: AUTO
+    url: https://noaa-reanalyses-pds.s3.amazonaws.com/observations/reanalysis/conv/prepbufr/{{ yyyymmdd[:4] }}/{{ yyyymmdd[4:6] }}/prepbufr/gdas.{{ yyyymmdd }}.t{{ hh }}z.prepbufr.nr
   regrid:
     method: BILIN
     to: G104
   paths:
-    grids:
-      forecast: AUTO
-    obs: AUTO
-    run: AUTO
+    obs: ./grids/obs
 prewxvx:
-  forecast_path: AUTO
+  forecast_path: ./
   lam_index: 64220
   lcc_info:
     n_x: 338
@@ -164,27 +159,27 @@ prewxvx:
   - 250
   - 500
   - 850
-  output_path: AUTO
+  output_path: ./postprocessed_files
   model_type: nested-global
   anemoi_reference_dataset_kwargs:
     adjust: all
     cutout:
-    - dataset: AUTO
+    - dataset: ./data/hrrr.zarr
       trim_edge:
       - 10
       - 11
       - 10
       - 11
-    - dataset: AUTO
+    - dataset: ./data/gfs.zarr
     min_distance_km: 0
   forecast_regrid_kwargs:
     regridder_kwargs:
       method: conservative_normed
-    target_grid_path: AUTO
+    target_grid_path: ./data/global_one_degree.nc
 plot_vx_grid:
-  work_path: AUTO
+  work_path: ./
   stat_prefix: grid_stat
 plot_vx_obs:
-  work_path: AUTO
+  work_path: ./
   stat_prefix: point_stat
 

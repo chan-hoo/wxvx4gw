@@ -68,45 +68,6 @@ class ConfigGenerator:
     """Generate flattened YAML configuration files for WXVX tasks."""
 
     # -----------------------------------------------------------------
-    # Parameter-specific default values when AUTO
-    # -----------------------------------------------------------------
-    
-    AUTO_RULES = {
-        "nco_vars.OPS_PATH": "{script_dir}/PTMP",
-        "vx_common.meta.post_files": "{COMINOUT}/vx/post_files",
-        "vx_common.forecast.path":(
-            '{{ meta.post_files }}/nested-global.{{ yyyymmdd[:4] }}-{{ yyyymmdd[4:6] }}-'
-            '{{ yyyymmdd[6:8] }}T{{ hh }}.{{ "%02d" % meta.max_leadtime }}h.nc'
-            ),
-        "vx_grid2grid.meta.workdir": "{COMINOUT}/vx/grid2grid",
-        "vx_grid2grid.meta.grids": "{COMINOUT}/vx/grid2grid/grids",
-        "vx_grid2grid.truth.url":(
-            'https://noaa-gfs-bdp-pds.s3.amazonaws.com/'
-            'gfs.{{ yyyymmdd }}/{{ hh }}/atmos/'
-            'gfs.t{{ hh }}z.pgrb2.0p25.f{{ "%03d" % fh }}'
-            ),
-        "vx_grid2grid.paths.grids.forecast": "{COMINOUT}/vx/grid2grid/grids/forecast",
-        "vx_grid2grid.paths.grids.truth": "{COMINOUT}/vx/grid2grid/grids/truth",
-        "vx_grid2grid.paths.run": "{COMINOUT}/vx/grid2grid/run",
-        "vx_grid2obs.meta.workdir": "{COMINOUT}/vx/grid2obs",
-        "vx_grid2obs.meta.grids": "{COMINOUT}/vx/grid2obs/grids",
-        "vx_grid2obs.truth.url":(
-            'https://noaa-reanalyses-pds.s3.amazonaws.com/observations/reanalysis/conv/prepbufr/'
-            '{{ yyyymmdd[:4] }}/{{ yyyymmdd[4:6] }}/prepbufr/gdas.{{ yyyymmdd }}.t{{ hh }}z.prepbufr.nr'
-            ),
-        "vx_grid2obs.paths.grids.forecast": "{COMINOUT}/vx/grid2obs/forecast",
-        "vx_grid2obs.paths.obs": "{COMINOUT}/vx/grid2obs/obs",
-        "vx_grid2obs.paths.run": "{COMINOUT}/vx/grid2obs/run",
-        "prewxvx.forecast_path": "{COMINOUT}/inference",
-        "prewxvx.output_path": "{COMINOUT}/vx/post_files",
-        "prewxvx.anemoi_reference_dataset_kwargs.cutout[0].dataset": "{COMINOUT}/data/hrrr.zarr",
-        "prewxvx.anemoi_reference_dataset_kwargs.cutout[1].dataset": "{COMINOUT}/data/gfs.zarr",
-        "prewxvx.forecast_regrid_kwargs.target_grid_path": "{COMINOUT}/data/global_one_degree.nc",
-        "plot_vx_grid.work_path": "{COMINOUT}/vx/grid2grid",
-        "plot_vx_obs.work_path": "{COMINOUT}/vx/grid2obs",
-    }
-
-    # -----------------------------------------------------------------
     # Initialize
     # -----------------------------------------------------------------
 
@@ -135,8 +96,8 @@ class ConfigGenerator:
         # Experiment cases directory under the parm directory.
         self.exp_cases_dir = self.script_dir / "exp_cases"
     
-        # Default OPS directory under the repository root.
-        self.default_ops_path = self.repo_dir / "PTMP"
+        # Default OPS directory under the parm directory.
+        self.default_ops_path = self.repo_dir / "parm" / "PTMP"
     
         self.config: dict[str, Any] = {}
         self.platform_config: dict[str, Any] = {}
@@ -222,152 +183,6 @@ class ConfigGenerator:
         self.platform_params = platforms[platform]
 
         return self.platform_params
-
-    # -----------------------------------------------------------------
-    # Resolve configuration parms when set to AUTO
-    # -----------------------------------------------------------------
-
-    def get_auto_context(self) -> dict[str, str]:
-        """Collect configuration values and construct common paths."""
-    
-        context = {
-            "repo_dir": str(self.repo_dir),
-            "script_dir": str(self.script_dir),
-        }
-    
-        # Collect parameters from app and nco_vars.
-        for group_name in ("app", "nco_vars"):
-            group = self.config.get(group_name, {})
-    
-            if not isinstance(group, dict):
-                raise ValueError(
-                    f"Configuration group '{group_name}' must be a mapping."
-                )
-    
-            for key, value in group.items():
-                if value is not None and not isinstance(value, (dict, list)):
-                    context[key] = str(value)
-    
-        # Resolve OPS_PATH=AUTO before constructing COMINOUT.
-        ops_path = context.get("OPS_PATH")
-    
-        if ops_path is None or ops_path.strip().upper() == "AUTO":
-            ops_path = str(self.default_ops_path)
-    
-        context["OPS_PATH"] = ops_path
-    
-        # Construct the COMINOUT directory.
-        required = ("envir", "NET", "model_ver", "RUN")
-        missing = [key for key in required if not context.get(key)]
-    
-        if missing:
-            raise ValueError(
-                "Cannot construct cominout. Missing parameters: "
-                + ", ".join(missing)
-            )
-    
-        COMINOUT = (
-            Path(ops_path)
-            / context["envir"]
-            / context["NET"]
-            / context["model_ver"]
-            / context["RUN"]
-        )
-    
-        context["COMINOUT"] = str(COMINOUT)
-    
-        logger.info("OPS_PATH: %s", ops_path)
-        logger.info("COMINOUT: %s", COMINOUT)
-    
-        return context
-
-
-    def resolve_auto_value(
-        self,
-        parameter_name: str,
-        context: dict[str, str],
-        full_path: str,
-    ) -> Any:
-        """Resolve AUTO values using their full configuration paths."""
-    
-        template = self.AUTO_RULES.get(full_path)
-    
-        if template is None:
-            raise ValueError(
-                f"No AUTO resolution rule defined for '{full_path}'."
-            )
-    
-        # Preserve Jinja2 expressions exactly.
-        return template
-
-
-    def resolve_auto_parameters(self) -> None:
-        """Resolve AUTO values in nested dictionaries and lists."""
-    
-        context = self.get_auto_context()
-    
-        def resolve_value(value: Any, prefix: str = "") -> Any:
-            """Recursively resolve AUTO values."""
-    
-            if isinstance(value, dict):
-                for key, item in value.items():
-                    full_path = f"{prefix}.{key}" if prefix else key
-    
-                    value[key] = resolve_value(
-                        item,
-                        prefix=full_path,
-                    )
-    
-                return value
-    
-            if isinstance(value, list):
-                for index, item in enumerate(value):
-                    value[index] = resolve_value(
-                        item,
-                        prefix=f"{prefix}[{index}]",
-                    )
-    
-                return value
-
-            if isinstance(value, str) and value.strip().upper() == "AUTO":
-                template = self.AUTO_RULES.get(prefix)
-            
-                if template is None:
-                    raise ValueError(
-                        f"No AUTO resolution rule defined for '{prefix}'."
-                    )
-            
-                # Preserve Jinja2 expressions; format ordinary path templates.
-                if "{{" in template and "}}" in template:
-                    resolved = template
-                else:
-                    try:
-                        resolved = template.format_map(context)
-                    except KeyError as exc:
-                        raise ValueError(
-                            f"Cannot resolve '{prefix}': missing context "
-                            f"parameter {exc.args[0]!r}."
-                        ) from exc
-            
-                return resolved
-
-            return value
-    
-        for group_name, group_config in self.config.items():
-            if group_name == "tasks":
-                continue
-    
-            if (
-                group_name.startswith("config_")
-                and isinstance(group_config, list)
-            ):
-                continue
-    
-            if isinstance(group_config, (dict, list)):
-                self.config[group_name] = resolve_value(
-                    group_config,
-                    prefix=group_name,
-                )
 
     # -----------------------------------------------------------------
     # Recursively merge group parameters
@@ -976,9 +791,9 @@ class ConfigGenerator:
         self.load_config()
         self.load_config_platform()
 
-        # Resolve all AUTO parameters before generating YAML files.
-        self.resolve_auto_parameters()
-    
+        if self.config["nco_vars"].get("OPS_PATH") == "AUTO":
+            self.config["nco_vars"]["OPS_PATH"] = str(self.default_ops_path)
+
         output_dir = self.get_output_dir()
         generated_files: list[Path] = []
     
