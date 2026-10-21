@@ -619,6 +619,9 @@ class ConfigGenerator:
         net = nco_vars.get("NET")
         if not net:
             raise ValueError("Missing required nco_vars.NET.")
+        run = nco_vars.get("RUN")
+        if not run:
+            raise ValueError("Missing required nco_vars.RUN.")
         ops_path = nco_vars.get("OPS_PATH")
         if not ops_path:
             raise ValueError("Missing required nco_vars.OPS_PATH.")
@@ -714,7 +717,9 @@ class ConfigGenerator:
                 "envir": envir,
                 "KEEPDATA": keepdata,
                 "model_ver": model_ver,
+                "NET": net,
                 "OPS_PATH": ops_path,
+                "RUN": run,
             }
     
             # Render the template.

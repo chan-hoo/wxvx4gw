@@ -2,6 +2,7 @@ app:
   account: epic
   exp_case_name: test_eagle
   platform: ursa
+  run_type: ctest
   workflow_manager: None
   workflow_type: eagle
 nco_vars:
@@ -119,14 +120,14 @@ vx_common:
       proj: latlon
     path: '{{ meta.post_files }}/nested-global.{{ yyyymmdd[:4] }}-{{ yyyymmdd[4:6] }}-{{ yyyymmdd[6:8] }}T{{ hh }}.{{ "%02d" % meta.max_leadtime }}h.nc'
   meta:
-    workdir: ./
-    grids: ./grids
+    workdir: '{{ DATA }}'
+    grids: '{{ DATA }}/grids'
     max_leadtime: 24
-    post_files: ./
+    post_files: '{{ DATA }}/post_prewxvx'
   paths:
     grids:
-      forecast: ./grids/forecast
-    run: ./
+      forecast: '{{ DATA }}/grids/forecast'
+    run: '{{ DATA }}'
 vx_grid2grid:
   truth:
     name: GFS
@@ -138,7 +139,7 @@ vx_grid2grid:
     to: forecast
   paths:
     grids:
-      truth: ./grids/truth
+      truth: '{{ DATA }}/grids/truth'
 vx_grid2obs:
   truth:
     name: PREPBUFR
@@ -148,9 +149,9 @@ vx_grid2obs:
     method: BILIN
     to: G104
   paths:
-    obs: ./grids/obs
+    obs: '{{ DATA }}/grids/obs'
 prewxvx:
-  forecast_path: ./
+  forecast_path: '{{ DATA }}'
   lam_index: 64220
   lcc_info:
     n_x: 338
@@ -159,27 +160,27 @@ prewxvx:
   - 250
   - 500
   - 850
-  output_path: ./postprocessed_files
+  output_path: '{{ DATA }}/post_prewxvx'
   model_type: nested-global
   anemoi_reference_dataset_kwargs:
     adjust: all
     cutout:
-    - dataset: ./data/hrrr.zarr
+    - dataset: '{{ DATA }}/data/hrrr.zarr'
       trim_edge:
       - 10
       - 11
       - 10
       - 11
-    - dataset: ./data/gfs.zarr
+    - dataset: '{{ DATA }}/data/gfs.zarr'
     min_distance_km: 0
   forecast_regrid_kwargs:
     regridder_kwargs:
       method: conservative_normed
-    target_grid_path: ./data/global_one_degree.nc
+    target_grid_path: '{{ DATA }}/data/global_one_degree.nc'
 plot_vx_grid:
-  work_path: ./
+  work_path: '{{ DATA }}'
   stat_prefix: grid_stat
 plot_vx_obs:
-  work_path: ./
+  work_path: '{{ DATA }}'
   stat_prefix: point_stat
 
