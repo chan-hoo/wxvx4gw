@@ -34,4 +34,6 @@ if [[ $err != 0 ]]; then
   err_exit "wxvx: vx_grid2grid failed"
 fi
 
-# Copy result files to COMOUT
+# Copy result files/directories to COMOUT
+cp -rp ${DATA}/plots ${COMOUT}/grid2grid_plots
+cp -rp ${DATA}/stats ${COMOUT}/grid2grid_stats

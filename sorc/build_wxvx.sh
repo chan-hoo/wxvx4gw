@@ -189,8 +189,6 @@ source "\$_CONDA_ROOT/etc/profile.d/conda.sh"
 conda activate "\$_WXVX_ENV"
 
 conda list | grep -E 'wxvx|met2go|uwtools|eagle-tools'
-which wxvx
-wxvx --help
 EOF
 
 chmod +x "$INSTALL_ROOT/activate_wxvx.sh"
