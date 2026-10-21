@@ -1,6 +1,6 @@
-# wxvx4gw
+# wxvx4ufs
 
-**wxvx for Global Workflow**
+**Weather Verification (wxvx) for Unified Forecat System (UFS) including Global Workflow, EAGLE, and RRFS**
 
 This repository provides scripts to install and configure [`wxvx`](https://github.com/NOAA-GSL/wxvx) for use in Global Workflow on the NOAA RDHPCS platforms.
 
@@ -22,8 +22,7 @@ Run the installation script from the `sorc` directory.
 The resulting directory structure is:
 
 ```text
-wxvx4gw/
-├── parm/
+wxvx4ufs/
 └── sorc/
     ├── build_wxvx.sh
     ├── wxvx.yaml
@@ -56,18 +55,18 @@ All paths are relative to the directory where the installation script is execute
 
 - SSH
 ```bash
-git clone git@github.com:chan-hoo/wxvx4gw.git
+git clone git@github.com:chan-hoo/wxvx4ufs.git
 ```
 
 - HTTPS
 ```bash
-git clone https://github.com/chan-hoo/wxvx4gw.git
+git clone https://github.com/chan-hoo/wxvx4ufs.git
 ```
 
 ### Step 2. Run the installation script
 
 ```bash
-cd wxvx4gw/sorc
+cd wxvx4ufs/sorc
 ./build_wxvx.sh
 ```
 
