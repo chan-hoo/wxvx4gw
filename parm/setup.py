@@ -757,14 +757,16 @@ class ConfigGenerator:
     
         logger.info("Job-card output directory: %s", job_card_dir)
     
-        return job_card_dir, job_card_suffix
+        return job_card_dir, job_card_suffix, exp_case_path
     
     
     def generate_job_cards(self) -> list[Path]:
         """Generate job cards for all tasks in config_base.yaml."""
     
         # Determine the destination directory and suffix.
-        job_card_dir, job_card_suffix = self.get_job_card_output_dir()
+        job_card_dir, job_card_suffix, exp_case_path = (
+            self.get_job_card_output_dir()
+        )
     
         # Load the job-card template.
         template_dir = self.script_dir / "templates"
@@ -837,8 +839,6 @@ class ConfigGenerator:
         com_dir = ops_path / envir / "com" / net / model_ver
         com_dir.mkdir(parents=True, exist_ok=True)
 
-        exp_case_name = app_config["exp_case_name"]
-        exp_case_path = self.exp_cases_dir / exp_case_name
         exp_case_path.mkdir(parents=True, exist_ok=True)
         self.create_symlinks_dirs(
             exp_case_path,
@@ -893,6 +893,7 @@ class ConfigGenerator:
                 "platform": platform_name,
                 "workflow_manager": app_config.get("workflow_manager"),
                 "HOMEwxvx": str(self.repo_dir),
+                "exp_case_path": str(exp_case_path),
                 "pdy_cdate": pdy_cdate,
                 "cyc_cdate": cyc_cdate,
                 "envir": envir,

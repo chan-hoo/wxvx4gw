@@ -60,6 +60,8 @@ export OPSROOT="${OPSROOT:-{{ OPS_PATH }}/${envir}}"
 export COMROOT="${COMROOT:-${OPSROOT}/com}"
 export DATAROOT="${DATAROOT:-${OPSROOT}/tmp}"
 export DCOMROOT="${DCOMROOT:-${OPSROOT}/dcom}"
+# Path to experimental case directory
+export exp_case_path="{{ exp_case_path }}"
 
 # ---------------------------------------------------------------------
 # Load module file for task
