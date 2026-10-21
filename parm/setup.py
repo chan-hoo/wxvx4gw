@@ -36,7 +36,7 @@ import yaml
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(levelname)s: %(message)s",
+    format="%(levelname)s::L%(lineno)d::%(message)s",
 )
 
 logger = logging.getLogger(__name__)
