@@ -24,6 +24,7 @@ import logging
 import sys
 from pathlib import Path
 from typing import Any
+from copy import deepcopy
 from datetime import datetime
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
@@ -194,12 +195,13 @@ class ConfigGenerator:
         source: dict,
     ) -> dict:
         """
-        Recursively merge source into target.
+        Recursively merge source into target without modifying source.
     
         - Preserve parameters that exist only in either dictionary.
         - Recursively merge nested dictionaries.
         - If the same parameter exists in both dictionaries,
           the value from source takes precedence.
+        - Deep-copy assigned values to prevent shared references.
         """
         for key, value in source.items():
             if (
@@ -209,7 +211,7 @@ class ConfigGenerator:
             ):
                 self.deep_merge(target[key], value)
             else:
-                target[key] = value
+                target[key] = deepcopy(value)
     
         return target
 
@@ -368,7 +370,7 @@ class ConfigGenerator:
                 group for group in group_names
                 if group != "common"
             ]
-    
+
         # Merge the remaining task configuration groups.
         merge_groups(group_names, task_config)
 
