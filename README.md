@@ -2,63 +2,20 @@
 
 **Weather Verification (wxvx) for Unified Forecat System (UFS) including Global Workflow, EAGLE, and RRFS**
 
-This repository provides scripts to install and configure [`wxvx`](https://github.com/NOAA-GSL/wxvx) for use in Global Workflow on the NOAA RDHPCS platforms.
+This repository provides scripts to install and configure [`wxvx`](https://github.com/NOAA-GSL/wxvx) for use with UFS applications, including Global workflow and RRFS workflow, on NOAA RDHPCS platforms.
 
-The installation script downloads and installs Miniforge locally, creates a dedicated Conda environment for `wxvx`, and keeps the environment and package cache under the project directory.
-
-## 1. Features
-
-- Local Miniforge installation without requiring an HPC-provided Conda module.
-- Dedicated Conda environment for `wxvx`.
-- Project-local Conda package cache and configuration.
-- No requirement to run `conda init`.
-- Shell script for activating the environment.
-- Support for Linux x86_64 and aarch64 architectures, subject to package availability and system compatibility.
-
-## 2. Installation Directory Structure
-
-Run the installation script from the `sorc` directory.
-
-The resulting directory structure is:
-
-```text
-wxvx4ufs/
-└── sorc/
-    ├── build_wxvx.sh
-    ├── wxvx.yaml
-    ├── activate_wxvx.sh
-    ├── condarc
-    └── conda/
-        ├── bin/
-        ├── envs/
-        │   └── wxvx/
-        ├── pkgs/
-        └── cache/
-```
-
-The directories serve the following purposes:
-
-| Path | Description |
-|---|---|
-| `sorc/conda/` | Local Miniforge installation |
-| `sorc/conda/envs/wxvx/` | Dedicated `wxvx` environment |
-| `sorc/conda/pkgs/` | Conda package cache |
-| `sorc/conda/cache/` | Application cache |
-| `sorc/condarc` | Project-local Conda configuration |
-| `sorc/activate_wxvx.sh` | Environment activation script |
-
-All paths are relative to the directory where the installation script is executed.
-
-## 3. Build and Installation
+## 1. Build and Installation
 
 ### Step 1. Clone the repository
 
-- SSH
+Choose one of the following methods to clone the repository.
+
+- SSH (if you have configured an SSH key for GitHub):
 ```bash
 git clone git@github.com:chan-hoo/wxvx4ufs.git
 ```
 
-- HTTPS
+- HTTPS:
 ```bash
 git clone https://github.com/chan-hoo/wxvx4ufs.git
 ```
@@ -77,13 +34,10 @@ The script performs the following operations:
 3. Installs Miniforge under `sorc/conda/`.
 4. Configures the Conda environment directory and package cache.
 5. Creates `wxvx` environment from YAML.
-6. Verifies the installation.
 
 The installation requires network access to the Miniforge release and Conda package repositories.
 
-**Note:** The first installation may take some time because Miniforge and its dependencies must be downloaded.
-
-## 4. Activate the wxvx Environment
+## 2. Activate the wxvx Environment
 
 After installation, activate the environment by sourcing the activation script:
 
@@ -112,4 +66,49 @@ If the environment is active and Conda is initialized in your current shell:
 ```bash
 conda deactivate
 ```
+
+## 3. Configuration
+
+The configuration YAML files and set-up script are located in the `parm` directory:
+
+```bash
+cd wxvx4ufs/parm
+```
+
+The main configuration files are:
+- `config_base.yaml`: Define the basic configuration parameters
+- `config_platform.yaml`: Define the platform-specific configuration parameters
+
+Before proceeding, review the parameters `account` ,`exp_case_name`, and `platform`.
+
+Run the set-up script to generate the experimental case configuration and supporting directories:
+
+```bash
+./setup.py
+```
+
+By default, the script generates the `exp_cases` and `PTMP` directories under the `parm` directory.
+
+## 4. Job Submission
+
+Until `ecFlow' integration is available, jobs must be submitted manually.
+
+Navigate to the job cards directory for your experimental case:
+
+```bash
+cd exp_cases/[app.exp_case_name]/job_cards
+```
+
+Submit the desired task:
+
+```bash
+sbatch jwxvx_[task_name]
+```
+
+## 5. Results and Log Files
+
+After the job completes, Check the following directories for output files and execution logs:
+- `com_dir`: symlink to the directory containing the result files
+- `log_dir`: symlink to the directory containing the log files
+- `tmp_dir`: symlink to the directory containing the working directories
 
