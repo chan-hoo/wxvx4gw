@@ -91,7 +91,7 @@ By default, the script generates the `exp_cases` and `PTMP` directories under th
 
 ## 4. Job Submission
 
-Until `ecFlow' integration is available, jobs must be submitted manually.
+Until `ecFlow` integration is available, jobs must be submitted manually.
 
 Navigate to the job cards directory for your experimental case:
 
