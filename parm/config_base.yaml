@@ -149,7 +149,7 @@ vx_grid2obs:
     method: BILIN
     to: G104
   paths:
-    obs: '{{ meta.workdir }}/grids/obs'
+    obs: '{{ meta.workdir }}/obs'
 prewxvx:
   forecast_path: '{{ DATA }}'
   lam_index: 64220
