@@ -1,40 +1,60 @@
 platforms:
   derecho:
+    cluster: null
+    cluster_data: null
+    constraint_data: null
     max_cores_per_node: 128
     native: null
     partition_queue: main
+    partition_queue_data: null
     qos: null
     run_cmd: aprun
     sched: pbspro
 
   gaea-c6:
+    cluster: c6
+    cluster_data: es
+    constraint_data: f6
     max_cores_per_node: 192
-    native: "-M c6"
+    native: null
     partition_queue: batch
+    partition_queue_data: dtn_f5_f6
     qos: normal
     run_cmd: srun
     sched: slurm
 
   hercules:
+    cluster: null
+    cluster_data: null
+    constraint_data: null
     max_cores_per_node: 80
     native: null
     partition_queue: hercules
+    partition_queue_data: service
     qos: batch
     run_cmd: srun
     sched: slurm
 
   orion:
+    cluster: null
+    cluster_data: null
+    constraint_data: null
     max_cores_per_node: 40
     native: null
     partition_queue: orion
+    partition_queue_data: service
     qos: batch
     run_cmd: srun
     sched: slurm
 
   ursa:
+    cluster: null
+    cluster_data: null
+    constraint_data: null
     max_cores_per_node: 192
     native: "--exclusive"
     partition_queue: u1-compute
+    partition_queue_data: u1-service
     qos: batch
     run_cmd: "srun --label --distribution=block:block"
     sched: slurm

@@ -24,6 +24,7 @@ tasks:
       memory_per_node: 128G
       nprocs: 1
       walltime: "00:10:00"
+    external_data: false
   vx_grid2grid:
     groups:
       - common
@@ -33,6 +34,7 @@ tasks:
       memory_per_node: 128G
       nprocs: 1
       walltime: "00:15:00"
+    external_data: false
   vx_grid2obs:
     groups:
       - common
@@ -42,6 +44,7 @@ tasks:
       memory_per_node: 128G
       nprocs: 1
       walltime: "00:15:00"
+    external_data: false
   plot_vx_grid:
     groups:
       - common
@@ -50,6 +53,7 @@ tasks:
       memory_per_node: 128G
       nprocs: 1
       walltime: "00:10:00"
+    external_data: false
   plot_vx_obs:
     groups:
       - common
@@ -58,6 +62,7 @@ tasks:
       memory_per_node: 128G
       nprocs: 1
       walltime: "00:10:00"
+    external_data: false
 common:
   cycles:
     start: '2022-02-03T12:00:00'

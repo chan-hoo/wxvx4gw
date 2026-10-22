@@ -678,10 +678,9 @@ class ConfigGenerator:
                 )
     
             hpc = task_definition.get("hpc", {})
-    
+ 
             nprocs = int(hpc.get("nprocs", 1))
             max_cores = int(platform["max_cores_per_node"])
-    
             if nprocs < 1 or max_cores < 1:
                 raise ValueError(
                     f"Invalid process configuration for '{task_name}'."
@@ -689,6 +688,8 @@ class ConfigGenerator:
     
             nnodes = (nprocs + max_cores - 1) // max_cores
             nprocs_per_node = (nprocs + nnodes -1) // nnodes
+
+            external_data = bool(task_definition.get("external_data"))
 
             if workflow_manager == "ecflow":
                 output_fn = f"{itask}_%ECF_DATE%%CYC%_%ECF_TRYNO%.log"
@@ -698,30 +699,35 @@ class ConfigGenerator:
 
             context = {
                 "account": app_config.get("account"),
-                "task_name": task_name,
-                "task_name_upper": task_name.upper(),
-                "output_name": output_name,
-                "partition_queue": platform["partition_queue"],
-                "qos": platform.get("qos"),
-                "walltime": hpc.get("walltime", "00:30:00"),
-                "nnodes": nnodes,
-                "nprocs_per_node": nprocs_per_node,
-                "memory_flag": bool(hpc.get("memory_per_node")),
-                "memory_per_node": hpc.get("memory_per_node"),
-                "native": platform.get("native"),
-                "sched": platform["sched"],
-                "platform": platform_name,
-                "workflow_manager": app_config.get("workflow_manager"),
-                "HOMEwxvx": str(self.repo_dir),
-                "exp_case_path": str(exp_case_path),
-                "pdy_cdate": pdy_cdate,
+                "cluster": platform.get("cluster"),
+                "cluster_data": platform.get("cluster_data"),
+                "constraint_data": platform.get("constraint_data"),
                 "cyc_cdate": cyc_cdate,
                 "envir": envir,
+                "exp_case_path": str(exp_case_path),
+                "external_data": external_data,
+                "HOMEwxvx": str(self.repo_dir),
                 "KEEPDATA": keepdata,
+                "memory_flag": bool(hpc.get("memory_per_node")),
+                "memory_per_node": hpc.get("memory_per_node"),
                 "model_ver": model_ver,
+                "native": platform.get("native"),
                 "NET": net,
+                "nnodes": nnodes,
+                "nprocs_per_node": nprocs_per_node,
                 "OPS_PATH": ops_path,
+                "output_name": output_name,
+                "partition_queue": platform.get("partition_queue"),
+                "partition_queue_data": platform.get("partition_queue_data"),
+                "pdy_cdate": pdy_cdate,
+                "platform": platform_name,
+                "qos": platform.get("qos"),
                 "RUN": run,
+                "sched": platform.get("sched"),
+                "task_name": task_name,
+                "task_name_upper": task_name.upper(),
+                "walltime": hpc.get("walltime", "00:30:00"),
+                "workflow_manager": app_config.get("workflow_manager"),
             }
     
             # Render the template.

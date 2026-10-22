@@ -3,7 +3,18 @@
 #SBATCH --account={{ account }}
 #SBATCH --job-name={{ task_name }}
 #SBATCH --output={{ output_name }}
+  {%- if external_data %}
+#SBATCH --partition={{ partition_queue_data }}
+    {%- if platform == "gaea-c6" %}
+#SBATCH --constraint={{ constraint_data }}
+#SBATCH --cluster={{ cluster_data }}
+    {%- endif %}
+  {%- else %}
 #SBATCH --partition={{ partition_queue }}
+    {%- if platform == "gaea-c6" %}
+#SBATCH --cluster={{ cluster }}
+    {%- endif %}
+  {%- endif %}
 #SBATCH --qos={{ qos }}
 #SBATCH --time={{ walltime }}
 #SBATCH --nodes={{ nnodes }}
