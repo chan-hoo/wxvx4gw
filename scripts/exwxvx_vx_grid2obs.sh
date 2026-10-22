@@ -15,7 +15,8 @@ workflow_type=$(read_yaml "${config_common}" "workflow_type")
 
 # Copy input files to temporary working directory.
 if [[ "${run_type}" == "ctest" ]]; then
-  cp -rp "${FIXwxvx}/data_${platform}/ctest/${workflow_type}/grids" ${DATA}/.
+  mkdir -p ${DATA}/grids
+  cp -rp "${FIXwxvx}/data_${platform}/ctest/${workflow_type}/grids/truth" ${DATA}/grids/.
   cp -rp "${FIXwxvx}/data_${platform}/ctest/${workflow_type}/post_prewxvx" ${DATA}/.
 fi
 

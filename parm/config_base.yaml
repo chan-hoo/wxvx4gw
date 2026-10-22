@@ -121,13 +121,13 @@ vx_common:
     path: '{{ meta.post_files }}/nested-global.{{ yyyymmdd[:4] }}-{{ yyyymmdd[4:6] }}-{{ yyyymmdd[6:8] }}T{{ hh }}.{{ "%02d" % meta.max_leadtime }}h.nc'
   meta:
     workdir: '{{ DATA }}'
-    grids: '{{ DATA }}/grids'
+    grids: '{{ meta.workdir }}/grids'
     max_leadtime: 24
-    post_files: '{{ DATA }}/post_prewxvx'
+    post_files: '{{ meta.workdir }}/post_prewxvx'
   paths:
     grids:
-      forecast: '{{ DATA }}/grids/forecast'
-    run: '{{ DATA }}'
+      forecast: '{{ meta.workdir }}/grids/forecast'
+    run: '{{ meta.workdir }}'
 vx_grid2grid:
   truth:
     name: GFS
@@ -139,7 +139,7 @@ vx_grid2grid:
     to: forecast
   paths:
     grids:
-      truth: '{{ DATA }}/grids/truth'
+      truth: '{{ meta.workdir }}/grids/truth'
 vx_grid2obs:
   truth:
     name: PREPBUFR
@@ -149,7 +149,7 @@ vx_grid2obs:
     method: BILIN
     to: G104
   paths:
-    obs: '{{ DATA }}/grids/obs'
+    obs: '{{ meta.workdir }}/grids/obs'
 prewxvx:
   forecast_path: '{{ DATA }}'
   lam_index: 64220
