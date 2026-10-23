@@ -81,6 +81,11 @@ The main configuration files are:
 
 Before proceeding, review the parameters `account` ,`exp_case_name`, and `platform`.
 
+```bash
+vim config_base.yaml
+```
+You can check the list of tasks `task_list` selected from the available tasks under the `tasks` group.
+
 Run the set-up script to generate the experimental case configuration and supporting directories:
 
 ```bash
