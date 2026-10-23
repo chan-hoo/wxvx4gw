@@ -25,7 +25,7 @@
 #SBATCH --time={{ walltime }}
 #SBATCH --nodes={{ nnodes }}
 #SBATCH --ntasks-per-node={{ nprocs_per_node }}
-  {%- if memory_flag %}
+  {%- if platform not in ["gaea-c6", "orion"] %}
 #SBATCH --mem={{ memory_per_node }}
   {%- endif %}
 {%- elif sched == "pbspro" %}

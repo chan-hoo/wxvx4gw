@@ -10,5 +10,5 @@ load(pathJoin("stack-intel", stack_intel_ver))
 prod_util_ver=os.getenv("prod_util_ver") or "2.1.1"
 load(pathJoin("prod_util", prod_util_ver))
 
-ecflow_ver=os.getenv("ecflow_ver") or "5.11.4"
-load(pathJoin("ecflow", ecflow_ver))
+--ecflow_ver=os.getenv("ecflow_ver") or "5.11.4"
+--load(pathJoin("ecflow", ecflow_ver))
