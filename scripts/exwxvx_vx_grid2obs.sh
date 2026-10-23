@@ -10,6 +10,7 @@ config_common="${exp_case_path}/configs/config_common.yaml"
 
 # Read common configuration values.
 external_data=$(read_yaml "${config_common}" "external_data_vx_grid2obs")
+external_data=$(printf '%s' "${external_data}" | tr '[:upper:]' '[:lower:]')
 platform=$(read_yaml "${config_common}" "platform")
 run_type=$(read_yaml "${config_common}" "run_type")
 workflow_type=$(read_yaml "${config_common}" "workflow_type")
@@ -17,7 +18,7 @@ workflow_type=$(read_yaml "${config_common}" "workflow_type")
 # Copy input files to temporary working directory.
 if [[ "${run_type}" == "ctest" ]]; then
   cp -rp "${FIXwxvx}/data_${platform}/ctest/${workflow_type}/post_prewxvx" ${DATA}/.
-  if [[ "${external_data,,}" == "false" ]]; then
+  if [[ "${external_data}" == "false" ]]; then
     cp -rp "${FIXwxvx}/data_${platform}/ctest/${workflow_type}/obs" ${DATA}/.
   fi
 fi
