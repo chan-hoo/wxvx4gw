@@ -375,12 +375,10 @@ class ConfigGenerator:
         merge_groups(group_names, task_config)
 
         # -------------------------------------------------------------
-        # Add platform-specific parameters and task metadata
-        # to config_common.yaml.
+        # Add task metadata to config_common.yaml.
         # -------------------------------------------------------------
         if task_name == "common":
-            task_config.update(self.platform_params)
-
+            #task_config.update(self.platform_params)
             # Add external_data flags for all tasks.
             for name, definition in self.config.get("tasks", {}).items():
                 task_config[f"external_data_{name}"] = definition.get(
