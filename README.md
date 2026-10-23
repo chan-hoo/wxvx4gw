@@ -112,7 +112,7 @@ sbatch jwxvx_[task_name]
 
 ## 5. Results and Log Files
 
-After the job completes, Check the following directories for output files and execution logs:
+After the job completes, check the following directories for output files and execution logs:
 - `com_dir`: symlink to the directory containing the result files
 - `log_dir`: symlink to the directory containing the log files
 - `tmp_dir`: symlink to the directory containing the working directories

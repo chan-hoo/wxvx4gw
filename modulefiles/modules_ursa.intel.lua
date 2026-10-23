@@ -1,5 +1,5 @@
 help([[
-Modules necessary for wxvx4gw on Ursa using Intel
+Modules necessary for wxvx4ufs on Ursa
 ]])
 
 prepend_path("MODULEPATH", "/contrib/spack-stack/spack-stack-1.9.2/envs/ue-oneapi-2024.2.1/install/modulefiles/Core")
