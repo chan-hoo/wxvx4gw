@@ -9,6 +9,7 @@ platforms:
     partition_queue: main
     partition_queue_data: null
     qos: null
+    qos_data: null
     run_cmd: aprun
     sched: pbspro
 
@@ -22,6 +23,7 @@ platforms:
     partition_queue: batch
     partition_queue_data: dtn_f5_f6
     qos: normal
+    qos_data: dtn
     run_cmd: srun
     sched: slurm
 
@@ -35,6 +37,7 @@ platforms:
     partition_queue: hercules
     partition_queue_data: service
     qos: batch
+    qos_data: null
     run_cmd: srun
     sched: slurm
 
@@ -48,6 +51,7 @@ platforms:
     partition_queue: orion
     partition_queue_data: service
     qos: batch
+    qos_data: null
     run_cmd: srun
     sched: slurm
 
@@ -61,5 +65,6 @@ platforms:
     partition_queue: u1-compute
     partition_queue_data: u1-service
     qos: batch
+    qos_data: null
     run_cmd: "srun --label --distribution=block:block"
     sched: slurm

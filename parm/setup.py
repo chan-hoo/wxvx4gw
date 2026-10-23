@@ -771,6 +771,7 @@ class ConfigGenerator:
                 "pdy_cdate": pdy_cdate,
                 "platform": platform_name,
                 "qos": platform.get("qos"),
+                "qos_data": platform.get("qos_data"),
                 "RUN": run,
                 "sched": platform.get("sched"),
                 "task_name": task_name,

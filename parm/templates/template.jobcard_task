@@ -8,12 +8,16 @@
     {%- if platform == "gaea-c6" %}
 #SBATCH --constraint={{ constraint_data }}
 #SBATCH --cluster={{ cluster_data }}
+#SBATCH --qos={{ qos_data }}
+    {%- else %}
+#SBATCH --qos={{ qos }}
     {%- endif %}
     {%- if native_data is not none %}
 #SBATCH {{ native_data }}
     {%- endif %}
   {%- else %}
 #SBATCH --partition={{ partition_queue }}
+#SBATCH --qos={{ qos }}
     {%- if platform == "gaea-c6" %}
 #SBATCH --cluster={{ cluster }}
     {%- endif %}
@@ -21,7 +25,6 @@
 #SBATCH {{ native }}
     {%- endif %}
   {%- endif %}
-#SBATCH --qos={{ qos }}
 #SBATCH --time={{ walltime }}
 #SBATCH --nodes={{ nnodes }}
 #SBATCH --ntasks-per-node={{ nprocs_per_node }}
