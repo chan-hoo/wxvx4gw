@@ -15,6 +15,9 @@ nco_vars:
 config_common:
   - app
   - nco_vars
+task_list:
+  - vx_grid2grid
+  - vx_grid2obs
 tasks:
   prewxvx:
     groups:

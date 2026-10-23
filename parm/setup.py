@@ -139,12 +139,50 @@ class ConfigGenerator:
 
         self.config = config
 
+        task_list = self.config.get("task_list", [])
+        
         logger.info(
-            "Found %d task(s).",
+            "Found %d selected task(s) out of %d defined task(s).",
+            len(task_list),
             len(self.config["tasks"]),
         )
 
         return self.config
+
+    # -----------------------------------------------------------------
+    # Validate selected tasks
+    # -----------------------------------------------------------------
+
+    def validate_task_list(self) -> list[str]:
+        """Validate and return the tasks selected for this experiment."""
+
+        task_list = self.config.get("task_list")
+
+        if not isinstance(task_list, list) or not task_list:
+            raise ValueError(
+                "'task_list' must be a non-empty list of task names."
+            )
+
+        tasks = self.config["tasks"]
+
+        for task_name in task_list:
+            if not isinstance(task_name, str) or not task_name.strip():
+                raise ValueError(
+                    f"Invalid task name in 'task_list': {task_name!r}"
+                )
+
+            if task_name not in tasks:
+                raise ValueError(
+                    f"Task '{task_name}' is listed in 'task_list' "
+                    "but is not defined in 'tasks'."
+                )
+
+        if len(task_list) != len(set(task_list)):
+            raise ValueError(
+                "'task_list' contains duplicate task names."
+            )
+
+        return task_list
 
     # -----------------------------------------------------------------
     # Read plotform-specific configuration
@@ -286,7 +324,7 @@ class ConfigGenerator:
         Build a flattened configuration for a task.
     
         Special handling:
-          - common: add platform-specific parameters.
+          - common: add metadata.
           - prewxvx: generate frequency, lead time, dates, and variables.
           - plot_vx_grid / plot_vx_obs: transform common configuration
             into plotting parameters.
@@ -378,9 +416,9 @@ class ConfigGenerator:
         # Add task metadata to config_common.yaml.
         # -------------------------------------------------------------
         if task_name == "common":
-            #task_config.update(self.platform_params)
-            # Add external_data flags for all tasks.
-            for name, definition in self.config.get("tasks", {}).items():
+            # Add external_data flags for selected tasks.
+            for name in self.validate_task_list():
+                definition = self.config["tasks"][name]
                 task_config[f"external_data_{name}"] = definition.get(
                     "external_data", False
                 )
@@ -672,11 +710,14 @@ class ConfigGenerator:
             com_dir=com_dir,
         )
 
-        # Generate a job card for each task.
+        # Generate job cards only for selected tasks.
         generated_files = []
-    
-        for task_name, task_definition in self.config["tasks"].items():
-    
+        tasks = self.config["tasks"]
+        task_list = self.validate_task_list()
+
+        for task_name in task_list:
+            task_definition = tasks[task_name]
+   
             if not isinstance(task_definition, dict):
                 raise ValueError(
                     f"Task '{task_name}' must be a mapping."
@@ -697,7 +738,9 @@ class ConfigGenerator:
             external_data = bool(task_definition.get("external_data"))
 
             if workflow_manager == "ecflow":
-                output_fn = f"{itask}_%ECF_DATE%%CYC%_%ECF_TRYNO%.log"
+                output_fn = (
+                    f"{task_name}_%ECF_DATE%%CYC%_%ECF_TRYNO%.log"
+                )
             else:
                 output_fn = f"{task_name}.%j.log"
             output_name = str(log_dir / output_fn)
@@ -848,28 +891,30 @@ class ConfigGenerator:
             generated_files.append(output_file)
     
         # Generate task-specific configuration files.
-        tasks = self.config.get("tasks", {})
-        
-        for task_name, task_definition in tasks.items():
+        tasks = self.config["tasks"]
+        task_list = self.validate_task_list()
+
+        for task_name in task_list:
+            task_definition = tasks[task_name]
 
             if not isinstance(task_definition, dict):
                 raise ValueError(
                     f"Task '{task_name}' must be a dictionary."
                 )
-        
+
             group_names = task_definition.get("groups", [])
             hpc_params = task_definition.get("hpc", {})
-        
+
             if not isinstance(group_names, list):
                 raise ValueError(
                     f"Task '{task_name}': 'groups' must be a list."
                 )
-        
+
             if not isinstance(hpc_params, dict):
                 raise ValueError(
                     f"Task '{task_name}': 'hpc' must be a dictionary."
                 )
-        
+
             task_config = self.build_task_config(
                 task_name=task_name,
                 group_names=group_names,
@@ -881,7 +926,7 @@ class ConfigGenerator:
                 task_config=task_config,
                 output_dir=output_dir,
             )
-    
+
             generated_files.append(output_file)
     
         logger.info(
