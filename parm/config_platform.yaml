@@ -5,6 +5,7 @@ platforms:
     constraint_data: null
     max_cores_per_node: 128
     native: null
+    native_data: null
     partition_queue: main
     partition_queue_data: null
     qos: null
@@ -17,6 +18,7 @@ platforms:
     constraint_data: f6
     max_cores_per_node: 192
     native: null
+    native_data: null
     partition_queue: batch
     partition_queue_data: dtn_f5_f6
     qos: normal
@@ -29,6 +31,7 @@ platforms:
     constraint_data: null
     max_cores_per_node: 80
     native: null
+    native_data: null
     partition_queue: hercules
     partition_queue_data: service
     qos: batch
@@ -41,6 +44,7 @@ platforms:
     constraint_data: null
     max_cores_per_node: 40
     native: null
+    native_data: null
     partition_queue: orion
     partition_queue_data: service
     qos: batch
@@ -53,6 +57,7 @@ platforms:
     constraint_data: null
     max_cores_per_node: 192
     native: "--exclusive"
+    native_data: null
     partition_queue: u1-compute
     partition_queue_data: u1-service
     qos: batch

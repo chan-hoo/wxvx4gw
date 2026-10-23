@@ -375,10 +375,17 @@ class ConfigGenerator:
         merge_groups(group_names, task_config)
 
         # -------------------------------------------------------------
-        # Add platform-specific parameters to config_common.yaml.
+        # Add platform-specific parameters and task metadata
+        # to config_common.yaml.
         # -------------------------------------------------------------
         if task_name == "common":
             task_config.update(self.platform_params)
+
+            # Add external_data flags for all tasks.
+            for name, definition in self.config.get("tasks", {}).items():
+                task_config[f"external_data_{name}"] = definition.get(
+                    "external_data", False
+                )
     
         # -------------------------------------------------------------
         # Generate transformed parameters for special tasks.
@@ -712,6 +719,7 @@ class ConfigGenerator:
                 "memory_per_node": hpc.get("memory_per_node"),
                 "model_ver": model_ver,
                 "native": platform.get("native"),
+                "native_data": platform.get("native_data"),
                 "NET": net,
                 "nnodes": nnodes,
                 "nprocs_per_node": nprocs_per_node,
@@ -804,8 +812,12 @@ class ConfigGenerator:
         self.load_config()
         self.load_config_platform()
 
+        # Resolve AUTO in some nco_vars parameters
         if self.config["nco_vars"].get("OPS_PATH") == "AUTO":
             self.config["nco_vars"]["OPS_PATH"] = str(self.default_ops_path)
+
+        if self.config["nco_vars"].get("RUN") == "AUTO":
+            self.config["nco_vars"]["RUN"] = self.config["app"]["exp_case_name"]
 
         output_dir = self.get_output_dir()
         generated_files: list[Path] = []

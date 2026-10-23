@@ -9,10 +9,16 @@
 #SBATCH --constraint={{ constraint_data }}
 #SBATCH --cluster={{ cluster_data }}
     {%- endif %}
+    {%- if native_data is not none %}
+#SBATCH {{ native_data }}
+    {%- endif %}
   {%- else %}
 #SBATCH --partition={{ partition_queue }}
     {%- if platform == "gaea-c6" %}
 #SBATCH --cluster={{ cluster }}
+    {%- endif %}
+    {%- if native is not none %}
+#SBATCH {{ native }}
     {%- endif %}
   {%- endif %}
 #SBATCH --qos={{ qos }}
@@ -21,9 +27,6 @@
 #SBATCH --ntasks-per-node={{ nprocs_per_node }}
   {%- if memory_flag %}
 #SBATCH --mem={{ memory_per_node }}
-  {%- endif %}
-  {%- if native is not none %}
-#SBATCH {{ native }}
   {%- endif %}
 {%- elif sched == "pbspro" %}
 #PBS -S /bin/bash

@@ -11,7 +11,7 @@ nco_vars:
   model_ver: v0.0.1
   NET: test_net
   OPS_PATH: AUTO
-  RUN: test_run
+  RUN: AUTO
 config_common:
   - app
   - nco_vars
@@ -34,7 +34,7 @@ tasks:
       memory_per_node: 128G
       nprocs: 1
       walltime: "00:15:00"
-    external_data: false
+    external_data: true
   vx_grid2obs:
     groups:
       - common
@@ -44,7 +44,7 @@ tasks:
       memory_per_node: 128G
       nprocs: 1
       walltime: "00:15:00"
-    external_data: false
+    external_data: true
   plot_vx_grid:
     groups:
       - common

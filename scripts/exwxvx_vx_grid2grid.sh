@@ -9,15 +9,18 @@ source "${USHwxvx}/yaml_utils.sh"
 config_common="${exp_case_path}/configs/config_common.yaml"
 
 # Read common configuration values.
+external_data=$(read_yaml "${config_common}" "external_data_vx_grid2grid")
 platform=$(read_yaml "${config_common}" "platform")
 run_type=$(read_yaml "${config_common}" "run_type")
 workflow_type=$(read_yaml "${config_common}" "workflow_type")
 
 # Copy input files to temporary working directory.
 if [[ "${run_type}" == "ctest" ]]; then
-  mkdir -p ${DATA}/grids
-  cp -rp "${FIXwxvx}/data_${platform}/ctest/${workflow_type}/grids/truth" ${DATA}/grids/.
   cp -rp "${FIXwxvx}/data_${platform}/ctest/${workflow_type}/post_prewxvx" ${DATA}/.
+  if [[ "${external_data,,}" == "false" ]]; then
+    mkdir -p ${DATA}/grids
+    cp -rp "${FIXwxvx}/data_${platform}/ctest/${workflow_type}/grids/truth" ${DATA}/grids/.
+  fi
 fi
 
 # Update configuration file with temporary working directory.
