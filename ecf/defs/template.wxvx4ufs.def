@@ -1,0 +1,36 @@
+suite {{ exp_case_name }}
+    family cycle
+        repeat date YMD {{ yyyymmdd_first }} {{ yyyymmdd_last }} {{ date_cycle_freq_day }}
+  {%- if sched == "slurm" %}
+        edit ECF_JOB_CMD "sbatch %ECF_JOB%"
+  {%- elif sched == "pbspro" %}
+        edit ECF_JOB_CMD "qsub %ECF_JOB%"
+  {%- endif %}
+        edit ECF_FILES "{{ exp_case_path }}/ecf/ecf_scripts"
+        edit ECF_DATE %YMD%
+        edit CYC {{ hh_first }}
+  {%- if task_flag_prewxvx %}
+        task jwxvx_prewxvx
+  {%- endif %}
+  {%- if task_flag_vx_grid2grid %}
+        task jwxvx_vx_grid2grid
+    {%- if task_flag_prewxvx %}
+            trigger jwxvx_prewxvx == complete
+    {%- endif %}
+  {%- endif %}
+  {%- if task_flag_vx_grid2obs %}
+        task jwxvx_vx_grid2obs
+    {%- if task_flag_prewxvx %}
+            trigger jwxvx_prewxvx == complete
+    {%- endif %}
+  {%- endif %}
+  {%- if task_flag_plot_grid2grid %}
+        task jwxvx_plot_grid2grid
+            trigger jwxvx_vx_grid2grid == complete
+  {%- endif %}
+  {%- if task_flag_plot_grid2obs %}
+        task jwxvx_plot_grid2obs
+            trigger jwxvx_vx_grid2obs == complete
+  {%- endif %}
+    endfamily
+endsuite
